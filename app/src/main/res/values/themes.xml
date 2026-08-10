@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.PwVault" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#1F2933</item>
+        <item name="colorPrimaryDark">#0F1720</item>
+        <item name="colorAccent">#3E9C82</item>
+    </style>
+</resources>
