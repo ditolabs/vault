@@ -1,3 +1,39 @@
 <resources>
-    <style name="Theme.Vault" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Dark-only by design (see DESIGN.md "Known open items") -->
+    <style name="Theme.PwVault" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="android:windowBackground">@color/ink_900</item>
+        <item name="colorPrimary">@color/vault_green</item>
+        <item name="colorPrimaryDark">@color/ink_900</item>
+        <item name="colorAccent">@color/vault_green</item>
+        <item name="colorSurface">@color/ink_800</item>
+        <item name="colorOnSurface">@color/paper</item>
+        <item name="colorOnBackground">@color/paper</item>
+        <item name="colorError">@color/danger</item>
+        <item name="android:textColorPrimary">@color/paper</item>
+        <item name="android:textColorSecondary">@color/dim</item>
+        <item name="materialButtonStyle">@style/PwVault.Button</item>
+        <item name="materialAlertDialogTheme">@style/PwVault.Dialog</item>
+    </style>
+
+    <!-- 12dp radius for containers (cards/dialogs), per DESIGN.md radius scale -->
+    <style name="PwVault.Dialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/PwVault.ShapeOverlay.Container</item>
+        <item name="colorSurface">@color/ink_800</item>
+        <item name="colorOnSurface">@color/paper</item>
+    </style>
+
+    <style name="PwVault.ShapeOverlay.Container" parent="">
+        <item name="cornerSize">12dp</item>
+    </style>
+
+    <!-- 4dp radius for inline controls (buttons, inputs), per DESIGN.md radius scale -->
+    <style name="PwVault.Button" parent="Widget.MaterialComponents.Button">
+        <item name="shapeAppearanceOverlay">@style/PwVault.ShapeOverlay.Control</item>
+        <item name="backgroundTint">@color/vault_green</item>
+        <item name="android:textColor">@color/ink_900</item>
+    </style>
+
+    <style name="PwVault.ShapeOverlay.Control" parent="">
+        <item name="cornerSize">4dp</item>
+    </style>
 </resources>
