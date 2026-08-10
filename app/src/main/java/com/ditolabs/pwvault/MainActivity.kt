@@ -54,6 +54,11 @@ class MainActivity : AppCompatActivity() {
 
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_2, android.R.id.text1)
         listView.adapter = adapter
+        listView.emptyView = findViewById(R.id.emptyStateText)
+
+        // R-15: label the specific action instead of a combined generic "Unlock/Create" button.
+        unlockButton.text = if (repo.vaultExists()) "Buka Vault" else "Buat Vault Baru"
+        passwordInput.hint = if (repo.vaultExists()) "Master password" else "Bikin master password baru"
 
         unlockButton.setOnClickListener {
             val pw = passwordInput.text?.toString().orEmpty()
@@ -212,7 +217,7 @@ class MainActivity : AppCompatActivity() {
     /** Tap on an entry opens this: copy / edit / delete, so it's discoverable without guessing gestures. */
     private fun showEntryDetailDialog(position: Int) {
         val entry = entries[position]
-        val options = arrayOf("Copy password", "Edit", "Hapus")
+        val options = arrayOf("Salin password", "Edit", "Hapus")
         AlertDialog.Builder(this)
             .setTitle(entry.title)
             .setItems(options) { _, which ->

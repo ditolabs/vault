@@ -1,0 +1,10 @@
+<resources>
+    <color name="ink_900">#0B0D12</color>
+    <color name="ink_800">#12141B</color>
+    <color name="ink_700">#171A24</color>
+    <color name="ink_line">#262B38</color>
+    <color name="paper">#E9EAE2</color>
+    <color name="dim">#8B8F9C</color>
+    <color name="vault_green">#3EA87C</color>
+    <color name="vault_green_dim">#2C7A5A</color>
+    <color name="danger">#C96A5A</color>

@@ -71,6 +71,16 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
+        <TextView
+            android:id="@+id/emptyStateText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Belum ada entry. Tap + buat nambah password pertama."
+            android:textColor="@color/dim"
+            android:textAlignment="center"
+            android:visibility="gone" />
+
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/addEntryFab"
             android:layout_width="wrap_content"

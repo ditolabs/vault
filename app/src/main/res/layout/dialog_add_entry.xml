@@ -3,27 +3,38 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:background="@color/ink_800"
     android:padding="24dp">
 
     <EditText
         android:id="@+id/titleInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Title (e.g. Gmail)"
+        android:hint="Nama layanan (misal: Gmail)"
+        android:textColor="@color/paper"
+        android:textColorHint="@color/dim"
         android:inputType="text" />
 
     <EditText
         android:id="@+id/usernameInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:hint="Username / email"
+        android:textColor="@color/paper"
+        android:textColorHint="@color/dim"
         android:inputType="text" />
 
+    <!-- Monospace: disambiguates 1/l/I and 0/O — functional, not decorative (see DESIGN.md) -->
     <EditText
         android:id="@+id/passwordInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:hint="Password"
+        android:fontFamily="monospace"
+        android:textColor="@color/paper"
+        android:textColorHint="@color/dim"
         android:inputType="textPassword" />
 
 </LinearLayout>
