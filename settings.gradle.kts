@@ -12,6 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-
-rootProject.name = "PwVault"
+rootProject.name = "Vault"
 include(":app")
