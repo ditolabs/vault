@@ -68,9 +68,8 @@ data class AppStrings(
     val next: String, val scan: String, val scanning: String, val offlineMode: String,
     val wrongPin: String, val wrongPass: String, val inputPass: String,
     val backup: String, val exportJson: String, val importVault: String,
-    // Tambahan baru untuk Form & Fitur Clean
     val serviceName: String, val save: String, val cancel: String, val editData: String,
-    val catNoPass: String, val selectCategory: String
+    val cleanEmpty: String, val selectCategory: String
 )
 
 val dictID = AppStrings(
@@ -87,7 +86,7 @@ val dictID = AppStrings(
     inputPass = "Masukkan kata sandi utama", backup = "Cadangan Data",
     exportJson = "Export Vault (JSON)", importVault = "Import Vault",
     serviceName = "Nama Layanan", save = "Simpan", cancel = "Batal", editData = "Edit Data",
-    catNoPass = "Tanpa Sandi (Clean)", selectCategory = "Pilih Kategori"
+    cleanEmpty = "Bersihkan Data Kosong", selectCategory = "Pilih Kategori"
 )
 
 val dictEN = AppStrings(
@@ -104,7 +103,7 @@ val dictEN = AppStrings(
     inputPass = "Enter master password", backup = "Data Backup",
     exportJson = "Export Vault (JSON)", importVault = "Import Vault",
     serviceName = "Service Name", save = "Save", cancel = "Cancel", editData = "Edit Data",
-    catNoPass = "No Password (Clean)", selectCategory = "Select Category"
+    cleanEmpty = "Clean Empty Passwords", selectCategory = "Select Category"
 )
 
 class MainActivity : AppCompatActivity() {
@@ -218,14 +217,15 @@ class MainActivity : AppCompatActivity() {
                             onUnlockBiometric = { showBiometricPrompt() }
                         )
                     } else {
-                        MainVaultScreen(
-                            entries = vaultEntries, t = t, lang = lang, isDark = isDarkTheme,
-                            onToggleLang = { lang = if (lang == "ID") "EN" else "ID" }, onToggleTheme = { isDarkTheme = !isDarkTheme },
-                            onLock = { lockVault() }, onExport = { exportLauncher.launch("pwvault_backup.json") },
-                            onImport = { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
-                            onAddEntry = { title, u, p, cat -> addEntry(title, u, p, cat) },
-                            onEditEntry = { old, title, u, p, cat -> editEntry(old, title, u, p, cat) },
-                            onDeleteEntry = { e -> deleteEntry(e) },
+                        onToggleLang = { lang = if (lang == "ID") "EN" else "ID" },
+                        onToggleTheme = { isDarkTheme = !isDarkTheme },
+                        onLock = { lockVault() },
+                        onExport = { exportLauncher.launch("pwvault_backup.json") },
+                        onImport = { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
+                        onCleanEmpty = { cleanEmptyPasswords() },
+                        onAddEntry = { title, u, p, cat -> addEntry(title, u, p, cat) },
+                        onEditEntry = { old, title, u, p, cat -> editEntry(old, title, u, p, cat) },
+                        onDeleteEntry = { e -> deleteEntry(e) },
                             onCopyPassword = { e -> copyPasswordToClipboard(e) },
                             onCopyUsername = { e -> copyUsernameToClipboard(e) }
                         )
@@ -295,6 +295,18 @@ class MainActivity : AppCompatActivity() {
     }
     private fun deleteEntry(e: Entry) { vaultEntries.remove(e); persistVault() }
 
+    private fun cleanEmptyPasswords() {
+        val initialSize = vaultEntries.size
+        vaultEntries.removeAll { it.password.isEmpty() }
+        val removedCount = initialSize - vaultEntries.size
+        if (removedCount > 0) {
+            persistVault()
+            Toast.makeText(this, "$removedCount data tanpa sandi berhasil dibersihkan", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Tidak ada data dengan sandi kosong", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun copyPasswordToClipboard(entry: Entry) {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("password", entry.password))
@@ -337,7 +349,7 @@ fun LockScreen(
     onToggleLang: () -> Unit, onToggleTheme: () -> Unit,
     onUnlockPassword: (String) -> Unit, onUnlockBiometric: () -> Unit
 ) {
-    var method by remember { mutableStateOf(if (isBiometricAvailable && vaultExists) "bio" else "pass") }
+    var showPasswordForm by remember { mutableStateOf(false) }
     var password by remember { mutableStateOf("") }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -374,30 +386,55 @@ fun LockScreen(
             Text(if (vaultExists) t.unlockPass else "Buat Brankas Baru", color = Color.Gray, fontSize = 14.sp)
             
             Spacer(Modifier.height(48.dp))
-            Row(modifier = Modifier.fillMaxWidth(0.9f).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(50)).padding(4.dp)) {
-                TabButton(t.pass, method == "pass") { method = "pass" }
-                if (isBiometricAvailable) TabButton(t.bio, method == "bio") { method = "bio" }
-            }
-            Spacer(Modifier.height(48.dp))
 
-            if (method == "pass") {
-                OutlinedTextField(
-                    value = password, onValueChange = { password = it },
-                    placeholder = { Text(if (vaultExists) t.inputPass else "Buat master password") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth(0.9f),
-                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
-                )
-                Spacer(Modifier.height(24.dp))
-                Button(onClick = { onUnlockPassword(password) }, enabled = password.isNotEmpty(), shape = RoundedCornerShape(50), modifier = Modifier.width(150.dp).height(50.dp)) {
-                    Text(if (vaultExists) t.next else "Buat", fontWeight = FontWeight.Bold)
+            Column(
+                modifier = Modifier.fillMaxWidth(0.9f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                if (showPasswordForm) {
+                    OutlinedTextField(
+                        value = password, onValueChange = { password = it },
+                        placeholder = { Text(if (vaultExists) t.inputPass else "Buat master password") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth(),
+                        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                    )
+                    Button(
+                        onClick = { onUnlockPassword(password) },
+                        enabled = password.isNotEmpty(),
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                    ) {
+                        Text(if (vaultExists) t.next else "Buat", fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    Button(
+                        onClick = { showPasswordForm = true },
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.onSurface, 
+                            contentColor = MaterialTheme.colorScheme.background
+                        )
+                    ) {
+                        Text(t.pass, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
                 }
-            } else {
-                Box(modifier = Modifier.size(100.dp).border(2.dp, MaterialTheme.colorScheme.outline, CircleShape).clip(CircleShape).clickable { onUnlockBiometric() }, contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Fingerprint, null, modifier = Modifier.size(48.dp), tint = Color.Gray)
+
+                if (isBiometricAvailable) {
+                    OutlinedButton(
+                        onClick = { onUnlockBiometric() },
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
+                    ) {
+                        Icon(Icons.Default.Fingerprint, contentDescription = null, modifier = Modifier.size(24.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(t.bio, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
                 }
-                Spacer(Modifier.height(24.dp))
-                Button(onClick = onUnlockBiometric, shape = RoundedCornerShape(50), modifier = Modifier.width(150.dp).height(50.dp)) { Text(t.scan, fontWeight = FontWeight.Bold) }
             }
         }
     }
@@ -416,7 +453,7 @@ fun RowScope.TabButton(text: String, selected: Boolean, onClick: () -> Unit) {
 fun MainVaultScreen(
     entries: List<Entry>, t: AppStrings, lang: String, isDark: Boolean,
     onToggleLang: () -> Unit, onToggleTheme: () -> Unit, onLock: () -> Unit,
-    onExport: () -> Unit, onImport: () -> Unit,
+    onExport: () -> Unit, onImport: () -> Unit, onCleanEmpty: () -> Unit,
     onAddEntry: (String, String, String, String) -> Unit, onEditEntry: (Entry, String, String, String, String) -> Unit,
     onDeleteEntry: (Entry) -> Unit, onCopyPassword: (Entry) -> Unit, onCopyUsername: (Entry) -> Unit
 ) {
@@ -428,11 +465,10 @@ fun MainVaultScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<Entry?>(null) }
 
-    // PERBAIKAN 2: Filter Data termasuk fitur "Tanpa Sandi (Clean)"
+    // Filter Data
     val filteredList = entries.filter { entry ->
         val matchCat = when (activeCategory) {
             "all" -> true
-            "nopass" -> entry.password.isEmpty() // Filter khusus Clean
             else -> entry.category == activeCategory
         }
         val matchSearch = entry.title.contains(searchQuery, true) || entry.username.contains(searchQuery, true)
@@ -447,17 +483,16 @@ fun MainVaultScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 24.dp)) {
                         VaultLogo(modifier = Modifier.size(28.dp))
                         Spacer(Modifier.width(12.dp))
-                        Text("PwVault", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Text(t.category.uppercase(), fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(8.dp))
-                    
-                    // Tambahan Kategori No-Pass untuk "Clean"
-                    val categories = listOf(
-                        "all" to t.catAll, "sosmed" to t.catSosmed, "email" to t.catEmail,
-                        "kerja" to t.catKerja, "lainnya" to t.catLainnya, "nopass" to t.catNoPass
-                    )
-                    categories.forEach { (id, label) ->
+                    Text("PwVault", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                }
+                Text(t.category.uppercase(), fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                
+                val categories = listOf(
+                    "all" to t.catAll, "sosmed" to t.catSosmed, "email" to t.catEmail,
+                    "kerja" to t.catKerja, "lainnya" to t.catLainnya
+                )
+                categories.forEach { (id, label) ->
                         val isSelected = activeCategory == id
                         Surface(
                             onClick = { activeCategory = id; scope.launch { drawerState.close() } },
@@ -465,12 +500,22 @@ fun MainVaultScreen(
                             shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                         ) {
                             Text(label, modifier = Modifier.padding(12.dp), fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
-                        }
                     }
+                }
 
-                    Spacer(Modifier.weight(1f))
-                    Divider(color = MaterialTheme.colorScheme.outline)
-                    Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
+                Text("PEMELIHARAAN", fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                TextButton(
+                    onClick = { scope.launch { drawerState.close() }; onCleanEmpty() }, 
+                    modifier = Modifier.fillMaxWidth()
+                ) { 
+                    Text(t.cleanEmpty, color = MaterialTheme.colorScheme.error) 
+                }
+
+                Spacer(Modifier.weight(1f))
+                Divider(color = MaterialTheme.colorScheme.outline)
+                Spacer(Modifier.height(16.dp))
 
                     Text(t.backup.uppercase(), fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
@@ -557,7 +602,7 @@ fun MainVaultScreen(
     }
 }
 
-fun categoriesLabel(id: String, t: AppStrings) = when(id) { "sosmed" -> t.catSosmed "email" -> t.catEmail "kerja" -> t.catKerja "nopass" -> t.catNoPass "lainnya" -> t.catLainnya else -> t.catAll }
+fun categoriesLabel(id: String, t: AppStrings) = when(id) { "sosmed" -> t.catSosmed "email" -> t.catEmail "kerja" -> t.catKerja "lainnya" -> t.catLainnya else -> t.catAll }
 
 @Composable
 fun DetailScreen(

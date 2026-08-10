@@ -15,10 +15,10 @@ android {
         versionName = "1.0"
     }
 
-        buildTypes {
+    buildTypes {
         release {
-            isMinifyEnabled = true // Membuang kode library yang tidak terpakai
-            isShrinkResources = true // Membuang file gambar/resource yang tidak terpakai
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
