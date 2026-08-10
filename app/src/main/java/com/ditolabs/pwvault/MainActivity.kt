@@ -163,7 +163,6 @@ class MainActivity : AppCompatActivity() {
                                 val user = obj.optString("username", obj.optString("login", obj.optString("email", "-")))
                                 val pass = obj.optString("password", obj.optString("pass", ""))
                                 
-                                // Auto-kategori fallback jika dari aplikasi luar
                                 val catFallback = when {
                                     title.lowercase().contains(Regex("ig|insta|twitter|x|fb|facebook|tiktok|sosmed")) -> "sosmed"
                                     title.lowercase().contains(Regex("gmail|yahoo|outlook|email")) -> "email"
@@ -210,22 +209,27 @@ class MainActivity : AppCompatActivity() {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     if (!isUnlocked.value) {
                         LockScreen(
-                            vaultExists = repo.vaultExists(), isBiometricAvailable = isBiometricAvailable() && biometricUnlock.isEnabled(),
+                            vaultExists = repo.vaultExists(), 
+                            isBiometricAvailable = isBiometricAvailable() && biometricUnlock.isEnabled(),
                             t = t, lang = lang, isDark = isDarkTheme,
-                            onToggleLang = { lang = if (lang == "ID") "EN" else "ID" }, onToggleTheme = { isDarkTheme = !isDarkTheme },
+                            onToggleLang = { lang = if (lang == "ID") "EN" else "ID" }, 
+                            onToggleTheme = { isDarkTheme = !isDarkTheme },
                             onUnlockPassword = { pw -> attemptUnlock(pw.toCharArray(), offerBiometricSetup = true) },
                             onUnlockBiometric = { showBiometricPrompt() }
                         )
                     } else {
-                        onToggleLang = { lang = if (lang == "ID") "EN" else "ID" },
-                        onToggleTheme = { isDarkTheme = !isDarkTheme },
-                        onLock = { lockVault() },
-                        onExport = { exportLauncher.launch("pwvault_backup.json") },
-                        onImport = { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
-                        onCleanEmpty = { cleanEmptyPasswords() },
-                        onAddEntry = { title, u, p, cat -> addEntry(title, u, p, cat) },
-                        onEditEntry = { old, title, u, p, cat -> editEntry(old, title, u, p, cat) },
-                        onDeleteEntry = { e -> deleteEntry(e) },
+                        MainVaultScreen(
+                            entries = vaultEntries, 
+                            t = t, lang = lang, isDark = isDarkTheme,
+                            onToggleLang = { lang = if (lang == "ID") "EN" else "ID" }, 
+                            onToggleTheme = { isDarkTheme = !isDarkTheme },
+                            onLock = { lockVault() }, 
+                            onExport = { exportLauncher.launch("pwvault_backup.json") },
+                            onImport = { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
+                            onCleanEmpty = { cleanEmptyPasswords() },
+                            onAddEntry = { title, u, p, cat -> addEntry(title, u, p, cat) },
+                            onEditEntry = { old, title, u, p, cat -> editEntry(old, title, u, p, cat) },
+                            onDeleteEntry = { e -> deleteEntry(e) },
                             onCopyPassword = { e -> copyPasswordToClipboard(e) },
                             onCopyUsername = { e -> copyUsernameToClipboard(e) }
                         )
@@ -353,7 +357,6 @@ fun LockScreen(
     var password by remember { mutableStateOf("") }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // PERBAIKAN 1: Alignment Toggles Bahasa & Tema dibuat center sempurna
         Row(
             modifier = Modifier.align(Alignment.TopEnd).padding(24.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -441,15 +444,6 @@ fun LockScreen(
 }
 
 @Composable
-fun RowScope.TabButton(text: String, selected: Boolean, onClick: () -> Unit) {
-    val bg = if (selected) MaterialTheme.colorScheme.onSurface else Color.Transparent
-    val tc = if (selected) MaterialTheme.colorScheme.background else Color.Gray
-    Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(50)).background(bg).clickable(onClick = onClick).padding(vertical = 10.dp), contentAlignment = Alignment.Center) { 
-        Text(text, fontWeight = FontWeight.Bold, color = tc) 
-    }
-}
-
-@Composable
 fun MainVaultScreen(
     entries: List<Entry>, t: AppStrings, lang: String, isDark: Boolean,
     onToggleLang: () -> Unit, onToggleTheme: () -> Unit, onLock: () -> Unit,
@@ -465,7 +459,6 @@ fun MainVaultScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<Entry?>(null) }
 
-    // Filter Data
     val filteredList = entries.filter { entry ->
         val matchCat = when (activeCategory) {
             "all" -> true
@@ -483,16 +476,16 @@ fun MainVaultScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 24.dp)) {
                         VaultLogo(modifier = Modifier.size(28.dp))
                         Spacer(Modifier.width(12.dp))
-                    Text("PwVault", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                }
-                Text(t.category.uppercase(), fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(8.dp))
-                
-                val categories = listOf(
-                    "all" to t.catAll, "sosmed" to t.catSosmed, "email" to t.catEmail,
-                    "kerja" to t.catKerja, "lainnya" to t.catLainnya
-                )
-                categories.forEach { (id, label) ->
+                        Text("PwVault", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Text(t.category.uppercase(), fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                    
+                    val categories = listOf(
+                        "all" to t.catAll, "sosmed" to t.catSosmed, "email" to t.catEmail,
+                        "kerja" to t.catKerja, "lainnya" to t.catLainnya
+                    )
+                    categories.forEach { (id, label) ->
                         val isSelected = activeCategory == id
                         Surface(
                             onClick = { activeCategory = id; scope.launch { drawerState.close() } },
@@ -500,22 +493,22 @@ fun MainVaultScreen(
                             shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                         ) {
                             Text(label, modifier = Modifier.padding(12.dp), fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
+                        }
                     }
-                }
 
-                Spacer(Modifier.height(16.dp))
-                Text("PEMELIHARAAN", fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(8.dp))
-                TextButton(
-                    onClick = { scope.launch { drawerState.close() }; onCleanEmpty() }, 
-                    modifier = Modifier.fillMaxWidth()
-                ) { 
-                    Text(t.cleanEmpty, color = MaterialTheme.colorScheme.error) 
-                }
+                    Spacer(Modifier.height(16.dp))
+                    Text("PEMELIHARAAN", fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                    TextButton(
+                        onClick = { scope.launch { drawerState.close() }; onCleanEmpty() }, 
+                        modifier = Modifier.fillMaxWidth()
+                    ) { 
+                        Text(t.cleanEmpty, color = MaterialTheme.colorScheme.error) 
+                    }
 
-                Spacer(Modifier.weight(1f))
-                Divider(color = MaterialTheme.colorScheme.outline)
-                Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.weight(1f))
+                    Divider(color = MaterialTheme.colorScheme.outline)
+                    Spacer(Modifier.height(16.dp))
 
                     Text(t.backup.uppercase(), fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
@@ -662,7 +655,6 @@ fun DetailScreen(
     }
 }
 
-// PERBAIKAN 3 & 4: Terjemahan Form & Pemilihan Kategori
 @Composable
 fun AddEditDialog(entry: Entry?, t: AppStrings, onDismiss: () -> Unit, onSave: (String, String, String, String) -> Unit) {
     var title by remember { mutableStateOf(entry?.title ?: "") }
@@ -704,7 +696,6 @@ fun AddEditDialog(entry: Entry?, t: AppStrings, onDismiss: () -> Unit, onSave: (
                 }
             }
         },
-        // Karena ada fitur "Tanpa Sandi (Clean)", form ini mengizinkan password dibiarkan kosong
         confirmButton = { TextButton(onClick = { if (title.isNotBlank()) onSave(title, username, password, category) }) { Text(t.save) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(t.cancel) } }
     )
