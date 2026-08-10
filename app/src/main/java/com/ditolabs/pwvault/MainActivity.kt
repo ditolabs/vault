@@ -24,6 +24,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -66,7 +67,10 @@ data class AppStrings(
     val pin: String, val pass: String, val bio: String, val delete: String,
     val next: String, val scan: String, val scanning: String, val offlineMode: String,
     val wrongPin: String, val wrongPass: String, val inputPass: String,
-    val backup: String, val exportJson: String, val importVault: String
+    val backup: String, val exportJson: String, val importVault: String,
+    // Tambahan baru untuk Form & Fitur Clean
+    val serviceName: String, val save: String, val cancel: String, val editData: String,
+    val catNoPass: String, val selectCategory: String
 )
 
 val dictID = AppStrings(
@@ -81,7 +85,9 @@ val dictID = AppStrings(
     bio = "Biometrik", delete = "Hapus", next = "Lanjut", scan = "Pindai", scanning = "Memindai...",
     offlineMode = "Mode Offline Lokal", wrongPin = "PIN tidak sesuai.", wrongPass = "Kata sandi salah.",
     inputPass = "Masukkan kata sandi utama", backup = "Cadangan Data",
-    exportJson = "Export Vault (JSON)", importVault = "Import Vault"
+    exportJson = "Export Vault (JSON)", importVault = "Import Vault",
+    serviceName = "Nama Layanan", save = "Simpan", cancel = "Batal", editData = "Edit Data",
+    catNoPass = "Tanpa Sandi (Clean)", selectCategory = "Pilih Kategori"
 )
 
 val dictEN = AppStrings(
@@ -96,7 +102,9 @@ val dictEN = AppStrings(
     bio = "Biometrics", delete = "Clear", next = "Next", scan = "Scan", scanning = "Scanning...",
     offlineMode = "Local Offline Mode", wrongPin = "Incorrect PIN.", wrongPass = "Incorrect password.",
     inputPass = "Enter master password", backup = "Data Backup",
-    exportJson = "Export Vault (JSON)", importVault = "Import Vault"
+    exportJson = "Export Vault (JSON)", importVault = "Import Vault",
+    serviceName = "Service Name", save = "Save", cancel = "Cancel", editData = "Edit Data",
+    catNoPass = "No Password (Clean)", selectCategory = "Select Category"
 )
 
 class MainActivity : AppCompatActivity() {
@@ -105,17 +113,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var biometricUnlock: BiometricVaultUnlock
     private var masterPassword: CharArray? = null
     
-    // State UI Compose
     private var vaultEntries = mutableStateListOf<Entry>()
     private var isUnlocked = mutableStateOf(false)
     private var showBiometricOffer = mutableStateOf(false)
     private var tempPwForBiometric: CharArray? = null
 
-    // Launchers untuk Export/Import
     private lateinit var exportLauncher: ActivityResultLauncher<String>
     private lateinit var importLauncher: ActivityResultLauncher<Array<String>>
 
-    // Handler Auto-Clear Clipboard
     private val clipboardClearHandler = Handler(Looper.getMainLooper())
     private var pendingClearRunnable: Runnable? = null
 
@@ -125,7 +130,6 @@ class MainActivity : AppCompatActivity() {
         repo = VaultRepository(this)
         biometricUnlock = BiometricVaultUnlock(this)
 
-        // Setup File Pickers
         exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
             uri?.let {
                 contentResolver.openOutputStream(it)?.use { out ->
@@ -135,6 +139,7 @@ class MainActivity : AppCompatActivity() {
                             put("title", e.title)
                             put("username", e.username)
                             put("password", e.password)
+                            put("category", e.category)
                         }
                         jsonArray.put(obj)
                     }
@@ -148,24 +153,37 @@ class MainActivity : AppCompatActivity() {
             uri?.let {
                 try {
                     contentResolver.openInputStream(it)?.use { input ->
-                        val jsonString = input.reader().readText()
-                        val jsonArray = JSONArray(jsonString)
-                        for (i in 0 until jsonArray.length()) {
-                            val obj = jsonArray.getJSONObject(i)
-                            vaultEntries.add(
-                                Entry(
-                                    title = obj.getString("title"),
-                                    username = obj.getString("username"),
-                                    password = obj.getString("password")
-                                )
-                            )
-                        }
-                        persistVault()
-                        Toast.makeText(this, "Data berhasil diimpor!", Toast.LENGTH_SHORT).show()
+                        val text = input.reader().readText().trim()
+                        if (text.startsWith("[")) {
+                            val jsonArray = JSONArray(text)
+                            var importedCount = 0
+                            
+                            for (i in 0 until jsonArray.length()) {
+                                val obj = jsonArray.getJSONObject(i)
+                                val title = obj.optString("title", obj.optString("name", obj.optString("url", "Tanpa Judul")))
+                                val user = obj.optString("username", obj.optString("login", obj.optString("email", "-")))
+                                val pass = obj.optString("password", obj.optString("pass", ""))
+                                
+                                // Auto-kategori fallback jika dari aplikasi luar
+                                val catFallback = when {
+                                    title.lowercase().contains(Regex("ig|insta|twitter|x|fb|facebook|tiktok|sosmed")) -> "sosmed"
+                                    title.lowercase().contains(Regex("gmail|yahoo|outlook|email")) -> "email"
+                                    title.lowercase().contains(Regex("kerja|slack|github|gitlab|jira|office")) -> "kerja"
+                                    else -> "lainnya"
+                                }
+                                val category = obj.optString("category", catFallback).ifEmpty { catFallback }
+                                
+                                vaultEntries.add(Entry(title, user, pass, category))
+                                importedCount++
+                            }
+                            
+                            if (importedCount > 0) {
+                                persistVault()
+                                Toast.makeText(this, "$importedCount data berhasil diimpor!", Toast.LENGTH_LONG).show()
+                            }
+                        } else { Toast.makeText(this, "Gagal: Format bukan JSON Array", Toast.LENGTH_LONG).show() }
                     }
-                } catch (e: Exception) {
-                    Toast.makeText(this, "Format file JSON tidak valid", Toast.LENGTH_SHORT).show()
-                }
+                } catch (e: Exception) { Toast.makeText(this, "Format file JSON tidak dikenali", Toast.LENGTH_SHORT).show() }
             }
         }
 
@@ -177,13 +195,10 @@ class MainActivity : AppCompatActivity() {
 
             val vaultGreen = Color(0xFF3EA87C)
             val danger = Color(0xFFC96A5A)
-            val ink900 = Color(0xFF0B0D12)
-            val ink800 = Color(0xFF12141B)
-            val paper = Color(0xFFE9EAE2)
             
             val DarkColorScheme = darkColorScheme(
-                primary = vaultGreen, background = ink900, surface = ink800,
-                onBackground = paper, onSurface = paper, onPrimary = ink900,
+                primary = vaultGreen, background = Color(0xFF0B0D12), surface = Color(0xFF12141B),
+                onBackground = Color(0xFFE9EAE2), onSurface = Color(0xFFE9EAE2), onPrimary = Color(0xFF0B0D12),
                 outline = Color(0xFF262B38), error = danger
             )
             val LightColorScheme = lightColorScheme(
@@ -194,28 +209,22 @@ class MainActivity : AppCompatActivity() {
 
             MaterialTheme(colorScheme = if (isDarkTheme) DarkColorScheme else LightColorScheme) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    
                     if (!isUnlocked.value) {
                         LockScreen(
-                            vaultExists = repo.vaultExists(),
-                            isBiometricAvailable = isBiometricAvailable() && biometricUnlock.isEnabled(),
+                            vaultExists = repo.vaultExists(), isBiometricAvailable = isBiometricAvailable() && biometricUnlock.isEnabled(),
                             t = t, lang = lang, isDark = isDarkTheme,
-                            onToggleLang = { lang = if (lang == "ID") "EN" else "ID" },
-                            onToggleTheme = { isDarkTheme = !isDarkTheme },
+                            onToggleLang = { lang = if (lang == "ID") "EN" else "ID" }, onToggleTheme = { isDarkTheme = !isDarkTheme },
                             onUnlockPassword = { pw -> attemptUnlock(pw.toCharArray(), offerBiometricSetup = true) },
                             onUnlockBiometric = { showBiometricPrompt() }
                         )
                     } else {
                         MainVaultScreen(
-                            entries = vaultEntries,
-                            t = t, lang = lang, isDark = isDarkTheme,
-                            onToggleLang = { lang = if (lang == "ID") "EN" else "ID" },
-                            onToggleTheme = { isDarkTheme = !isDarkTheme },
-                            onLock = { lockVault() },
-                            onExport = { exportLauncher.launch("pwvault_backup.json") },
-                            onImport = { importLauncher.launch(arrayOf("application/json", "*/*")) },
-                            onAddEntry = { title, u, p -> addEntry(title, u, p) },
-                            onEditEntry = { old, title, u, p -> editEntry(old, title, u, p) },
+                            entries = vaultEntries, t = t, lang = lang, isDark = isDarkTheme,
+                            onToggleLang = { lang = if (lang == "ID") "EN" else "ID" }, onToggleTheme = { isDarkTheme = !isDarkTheme },
+                            onLock = { lockVault() }, onExport = { exportLauncher.launch("pwvault_backup.json") },
+                            onImport = { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
+                            onAddEntry = { title, u, p, cat -> addEntry(title, u, p, cat) },
+                            onEditEntry = { old, title, u, p, cat -> editEntry(old, title, u, p, cat) },
                             onDeleteEntry = { e -> deleteEntry(e) },
                             onCopyPassword = { e -> copyPasswordToClipboard(e) },
                             onCopyUsername = { e -> copyUsernameToClipboard(e) }
@@ -228,10 +237,7 @@ class MainActivity : AppCompatActivity() {
                             title = { Text("Aktifkan unlock sidik jari?") },
                             text = { Text("Password tetap tersimpan terenkripsi. Sidik jari cuma jadi jalan pintas buka vault di HP ini.") },
                             confirmButton = {
-                                TextButton(onClick = {
-                                    showBiometricOffer.value = false
-                                    tempPwForBiometric?.let { setupBiometricEncryption(it) }
-                                }) { Text("Aktifkan") }
+                                TextButton(onClick = { showBiometricOffer.value = false; tempPwForBiometric?.let { setupBiometricEncryption(it) } }) { Text("Aktifkan") }
                             },
                             dismissButton = { TextButton(onClick = { showBiometricOffer.value = false }) { Text("Nanti aja") } }
                         )
@@ -241,15 +247,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // --- LOGIKA BACKEND ---
     private fun isBiometricAvailable(): Boolean = BiometricManager.from(this).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
 
     private fun attemptUnlock(pwChars: CharArray, offerBiometricSetup: Boolean) {
         try {
-            if (!repo.vaultExists()) {
-                repo.createVault(pwChars)
-                Toast.makeText(this, "Vault baru dibuat", Toast.LENGTH_SHORT).show()
-            }
+            if (!repo.vaultExists()) { repo.createVault(pwChars); Toast.makeText(this, "Vault baru dibuat", Toast.LENGTH_SHORT).show() }
             val loaded = repo.unlock(pwChars)
             masterPassword = pwChars
             vaultEntries.clear()
@@ -260,19 +262,14 @@ class MainActivity : AppCompatActivity() {
                 tempPwForBiometric = pwChars
                 showBiometricOffer.value = true
             }
-        } catch (e: Exception) {
-            Toast.makeText(this, "Password salah atau vault rusak", Toast.LENGTH_SHORT).show()
-        }
+        } catch (e: Exception) { Toast.makeText(this, "Password salah atau vault rusak", Toast.LENGTH_SHORT).show() }
     }
 
     private fun setupBiometricEncryption(pwChars: CharArray) {
         val cipher = biometricUnlock.prepareEncryptCipher()
         val prompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                result.cryptoObject?.cipher?.let {
-                    biometricUnlock.persistEncrypted(it, pwChars)
-                    Toast.makeText(this@MainActivity, "Unlock sidik jari aktif", Toast.LENGTH_SHORT).show()
-                }
+                result.cryptoObject?.cipher?.let { biometricUnlock.persistEncrypted(it, pwChars); Toast.makeText(this@MainActivity, "Unlock sidik jari aktif", Toast.LENGTH_SHORT).show() }
             }
         })
         prompt.authenticate(BiometricPrompt.PromptInfo.Builder().setTitle("Konfirmasi sidik jari").setNegativeButtonText("Batal").build(), BiometricPrompt.CryptoObject(cipher))
@@ -280,25 +277,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun showBiometricPrompt() {
         val cipher = try { biometricUnlock.prepareDecryptCipher() } catch (e: Exception) {
-            Toast.makeText(this, "Sidik jari tidak valid, gunakan password", Toast.LENGTH_LONG).show()
-            biometricUnlock.disable()
-            return
+            Toast.makeText(this, "Sidik jari tidak valid, gunakan password", Toast.LENGTH_LONG).show(); biometricUnlock.disable(); return
         }
         val prompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                result.cryptoObject?.cipher?.let {
-                    attemptUnlock(biometricUnlock.recoverPassword(it), false)
-                }
+                result.cryptoObject?.cipher?.let { attemptUnlock(biometricUnlock.recoverPassword(it), false) }
             }
         })
         prompt.authenticate(BiometricPrompt.PromptInfo.Builder().setTitle("Unlock PwVault").setNegativeButtonText("Pakai password").build(), BiometricPrompt.CryptoObject(cipher))
     }
 
     private fun persistVault() { repo.save(vaultEntries.toList(), masterPassword ?: return) }
-    private fun addEntry(t: String, u: String, p: String) { vaultEntries.add(Entry(t, u, p)); persistVault() }
-    private fun editEntry(old: Entry, t: String, u: String, p: String) {
+    private fun addEntry(t: String, u: String, p: String, c: String) { vaultEntries.add(Entry(t, u, p, c)); persistVault() }
+    private fun editEntry(old: Entry, t: String, u: String, p: String, c: String) {
         val idx = vaultEntries.indexOf(old)
-        if (idx != -1) { vaultEntries[idx] = Entry(t, u, p); persistVault() }
+        if (idx != -1) { vaultEntries[idx] = Entry(t, u, p, c); persistVault() }
     }
     private fun deleteEntry(e: Entry) { vaultEntries.remove(e); persistVault() }
 
@@ -308,11 +301,7 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Password disalin (auto-clear 30 dtk)", Toast.LENGTH_SHORT).show()
 
         pendingClearRunnable?.let { clipboardClearHandler.removeCallbacks(it) }
-        val clearRunnable = Runnable {
-            if (clipboard.primaryClip?.getItemAt(0)?.text == entry.password) {
-                clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
-            }
-        }
+        val clearRunnable = Runnable { if (clipboard.primaryClip?.getItemAt(0)?.text == entry.password) clipboard.setPrimaryClip(ClipData.newPlainText("", "")) }
         pendingClearRunnable = clearRunnable
         clipboardClearHandler.postDelayed(clearRunnable, 30_000)
     }
@@ -322,18 +311,10 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Username disalin", Toast.LENGTH_SHORT).show()
     }
 
-    private fun lockVault() {
-        masterPassword?.fill('\u0000')
-        masterPassword = null
-        vaultEntries.clear()
-        isUnlocked.value = false
-    }
+    private fun lockVault() { masterPassword?.fill('\u0000'); masterPassword = null; vaultEntries.clear(); isUnlocked.value = false }
     override fun onDestroy() { super.onDestroy(); lockVault() }
 }
 
-// ==========================================
-// KOMPONEN CUSTOM LOGO (Canvas Compose)
-// ==========================================
 @Composable
 fun VaultLogo(modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.onSurface) {
     Canvas(modifier = modifier.size(32.dp)) {
@@ -343,19 +324,12 @@ fun VaultLogo(modifier: Modifier = Modifier, color: Color = MaterialTheme.colorS
             drawLine(color = color, start = Offset(12f, 50f), end = Offset(20f, 50f), strokeWidth = 5f, cap = StrokeCap.Round)
             drawLine(color = color, start = Offset(80f, 50f), end = Offset(88f, 50f), strokeWidth = 5f, cap = StrokeCap.Round)
             drawLine(color = color, start = Offset(50f, 80f), end = Offset(50f, 88f), strokeWidth = 5f, cap = StrokeCap.Round)
-            
-            val path = Path().apply {
-                moveTo(30f, 36f); lineTo(50f, 66f); lineTo(70f, 36f)
-            }
-            drawPath(path = path, color = color, style = Stroke(width = 7f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            drawPath(path = Path().apply { moveTo(30f, 36f); lineTo(50f, 66f); lineTo(70f, 36f) }, color = color, style = Stroke(width = 7f, cap = StrokeCap.Round, join = StrokeJoin.Round))
             drawCircle(color = color, radius = 5f, center = Offset(50f, 46f))
         }
     }
 }
 
-// ==========================================
-// UI COMPOSABLES
-// ==========================================
 @Composable
 fun LockScreen(
     vaultExists: Boolean, isBiometricAvailable: Boolean,
@@ -367,13 +341,29 @@ fun LockScreen(
     var password by remember { mutableStateOf("") }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Toggle Settings (Top Right)
-        Row(modifier = Modifier.align(Alignment.TopEnd).padding(24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = onToggleLang, shape = RoundedCornerShape(50), contentPadding = PaddingValues(horizontal = 12.dp)) {
-                Text(lang, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+        // PERBAIKAN 1: Alignment Toggles Bahasa & Tema dibuat center sempurna
+        Row(
+            modifier = Modifier.align(Alignment.TopEnd).padding(24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(50), color = Color.Transparent,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                onClick = onToggleLang
+            ) {
+                Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(lang, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                }
             }
-            OutlinedButton(onClick = onToggleTheme, shape = CircleShape, contentPadding = PaddingValues(0.dp), modifier = Modifier.size(40.dp)) {
-                Icon(if (isDark) Icons.Default.WbSunny else Icons.Default.DarkMode, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+            Surface(
+                shape = CircleShape, color = Color.Transparent,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                onClick = onToggleTheme
+            ) {
+                Box(modifier = Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+                    Icon(if (isDark) Icons.Default.WbSunny else Icons.Default.DarkMode, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurface)
+                }
             }
         }
 
@@ -427,7 +417,7 @@ fun MainVaultScreen(
     entries: List<Entry>, t: AppStrings, lang: String, isDark: Boolean,
     onToggleLang: () -> Unit, onToggleTheme: () -> Unit, onLock: () -> Unit,
     onExport: () -> Unit, onImport: () -> Unit,
-    onAddEntry: (String, String, String) -> Unit, onEditEntry: (Entry, String, String, String) -> Unit,
+    onAddEntry: (String, String, String, String) -> Unit, onEditEntry: (Entry, String, String, String, String) -> Unit,
     onDeleteEntry: (Entry) -> Unit, onCopyPassword: (Entry) -> Unit, onCopyUsername: (Entry) -> Unit
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -438,22 +428,16 @@ fun MainVaultScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<Entry?>(null) }
 
-    // Logika Kategori Otomatis berdasarkan keyword judul akun
-    val categorizedEntries = entries.map { entry ->
-        val titleLow = entry.title.lowercase()
-        val cat = when {
-            titleLow.contains(Regex("ig|insta|twitter|x|fb|facebook|tiktok|sosmed")) -> "sosmed"
-            titleLow.contains(Regex("gmail|yahoo|outlook|email")) -> "email"
-            titleLow.contains(Regex("kerja|slack|github|gitlab|jira|office")) -> "kerja"
-            else -> "lainnya"
+    // PERBAIKAN 2: Filter Data termasuk fitur "Tanpa Sandi (Clean)"
+    val filteredList = entries.filter { entry ->
+        val matchCat = when (activeCategory) {
+            "all" -> true
+            "nopass" -> entry.password.isEmpty() // Filter khusus Clean
+            else -> entry.category == activeCategory
         }
-        Pair(entry, cat)
+        val matchSearch = entry.title.contains(searchQuery, true) || entry.username.contains(searchQuery, true)
+        matchCat && matchSearch
     }
-
-    val filteredList = categorizedEntries.filter { (entry, cat) ->
-        (activeCategory == "all" || cat == activeCategory) &&
-        (entry.title.contains(searchQuery, true) || entry.username.contains(searchQuery, true))
-    }.map { it.first }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -468,7 +452,11 @@ fun MainVaultScreen(
                     Text(t.category.uppercase(), fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
                     
-                    val categories = listOf("all" to t.catAll, "sosmed" to t.catSosmed, "email" to t.catEmail, "kerja" to t.catKerja, "lainnya" to t.catLainnya)
+                    // Tambahan Kategori No-Pass untuk "Clean"
+                    val categories = listOf(
+                        "all" to t.catAll, "sosmed" to t.catSosmed, "email" to t.catEmail,
+                        "kerja" to t.catKerja, "lainnya" to t.catLainnya, "nopass" to t.catNoPass
+                    )
                     categories.forEach { (id, label) ->
                         val isSelected = activeCategory == id
                         Surface(
@@ -502,14 +490,12 @@ fun MainVaultScreen(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Header + Hamburger
                 Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Default.Menu, "Menu") }
                     Spacer(Modifier.width(8.dp))
                     Text(categoriesLabel(activeCategory, t), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
 
-                // Search
                 OutlinedTextField(
                     value = searchQuery, onValueChange = { searchQuery = it }, placeholder = { Text(t.search) },
                     leadingIcon = { Icon(Icons.Default.Search, null) }, shape = RoundedCornerShape(50),
@@ -518,7 +504,6 @@ fun MainVaultScreen(
                 )
                 Spacer(Modifier.height(16.dp))
 
-                // List
                 if (filteredList.isEmpty()) {
                     Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text(t.noData, color = Color.Gray) }
                 } else {
@@ -527,7 +512,7 @@ fun MainVaultScreen(
                             Surface(onClick = { selectedItem = item }, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), modifier = Modifier.fillMaxWidth()) {
                                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Box(modifier = Modifier.size(48.dp).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { 
-                                        Icon(Icons.Default.Key, null, tint = MaterialTheme.colorScheme.primary) 
+                                        Icon(if (item.password.isEmpty()) Icons.Default.Warning else Icons.Default.Key, null, tint = if (item.password.isEmpty()) Color.Red else MaterialTheme.colorScheme.primary) 
                                     }
                                     Spacer(Modifier.width(16.dp))
                                     Column(modifier = Modifier.weight(1f)) {
@@ -542,12 +527,10 @@ fun MainVaultScreen(
                 }
             }
 
-            // FAB
             FloatingActionButton(onClick = { showAddDialog = true }, modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp), containerColor = MaterialTheme.colorScheme.onSurface, contentColor = MaterialTheme.colorScheme.background) { 
                 Icon(Icons.Default.Add, t.newData) 
             }
 
-            // Detail Overlay
             AnimatedVisibility(visible = selectedItem != null, enter = slideInHorizontally(initialOffsetX = { it }), exit = slideOutHorizontally(targetOffsetX = { it }), modifier = Modifier.fillMaxSize()) {
                 selectedItem?.let { item ->
                     DetailScreen(
@@ -559,14 +542,13 @@ fun MainVaultScreen(
                 }
             }
 
-            // Dialog Add/Edit
             if (showAddDialog) {
                 AddEditDialog(
-                    entry = editingItem,
+                    entry = editingItem, t = t,
                     onDismiss = { showAddDialog = false; editingItem = null },
-                    onSave = { title, u, p ->
-                        if (editingItem != null) { onEditEntry(editingItem!!, title, u, p); selectedItem = Entry(title, u, p) } 
-                        else { onAddEntry(title, u, p) }
+                    onSave = { title, u, p, cat ->
+                        if (editingItem != null) { onEditEntry(editingItem!!, title, u, p, cat); selectedItem = Entry(title, u, p, cat) } 
+                        else { onAddEntry(title, u, p, cat) }
                         showAddDialog = false; editingItem = null
                     }
                 )
@@ -575,7 +557,7 @@ fun MainVaultScreen(
     }
 }
 
-fun categoriesLabel(id: String, t: AppStrings) = when(id) { "sosmed" -> t.catSosmed "email" -> t.catEmail "kerja" -> t.catKerja "lainnya" -> t.catLainnya else -> t.catAll }
+fun categoriesLabel(id: String, t: AppStrings) = when(id) { "sosmed" -> t.catSosmed "email" -> t.catEmail "kerja" -> t.catKerja "nopass" -> t.catNoPass "lainnya" -> t.catLainnya else -> t.catAll }
 
 @Composable
 fun DetailScreen(
@@ -597,7 +579,7 @@ fun DetailScreen(
             
             Spacer(Modifier.height(32.dp))
             Box(modifier = Modifier.size(72.dp).border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape).align(Alignment.CenterHorizontally), contentAlignment = Alignment.Center) { 
-                Icon(Icons.Default.Key, null, modifier = Modifier.size(32.dp)) 
+                Icon(if (entry.password.isEmpty()) Icons.Default.Warning else Icons.Default.Key, null, modifier = Modifier.size(32.dp), tint = if(entry.password.isEmpty()) Color.Red else MaterialTheme.colorScheme.onSurface) 
             }
             Spacer(Modifier.height(16.dp))
             Text(entry.title, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -614,7 +596,7 @@ fun DetailScreen(
             Text(t.password, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
             Spacer(Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(text = if (showPassword) entry.password else "••••••••••••", fontSize = 16.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
+                Text(text = if (showPassword) entry.password else if(entry.password.isEmpty()) "-" else "••••••••••••", fontSize = 16.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
                 Row {
                     IconButton(onClick = { showPassword = !showPassword }, modifier = Modifier.size(24.dp)) { Icon(if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility, "Toggle") }
                     Spacer(Modifier.width(16.dp))
@@ -635,23 +617,50 @@ fun DetailScreen(
     }
 }
 
+// PERBAIKAN 3 & 4: Terjemahan Form & Pemilihan Kategori
 @Composable
-fun AddEditDialog(entry: Entry?, onDismiss: () -> Unit, onSave: (String, String, String) -> Unit) {
+fun AddEditDialog(entry: Entry?, t: AppStrings, onDismiss: () -> Unit, onSave: (String, String, String, String) -> Unit) {
     var title by remember { mutableStateOf(entry?.title ?: "") }
     var username by remember { mutableStateOf(entry?.username ?: "") }
     var password by remember { mutableStateOf(entry?.password ?: "") }
+    var category by remember { mutableStateOf(entry?.category ?: "lainnya") }
+
+    val categories = listOf(
+        "sosmed" to t.catSosmed, "email" to t.catEmail,
+        "kerja" to t.catKerja, "lainnya" to t.catLainnya
+    )
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (entry == null) "Data Baru" else "Edit Data") },
+        title = { Text(if (entry == null) t.newData else t.editData) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Nama Layanan") }, singleLine = true)
-                OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Username/Email") }, singleLine = true)
-                OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("Password") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text(t.serviceName) }, singleLine = true)
+                OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text(t.usernameEmail) }, singleLine = true)
+                OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text(t.password) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+                
+                Text(t.selectCategory, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(categories) { (id, label) ->
+                        val isSelected = category == id
+                        Surface(
+                            onClick = { category = id },
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
+                        ) {
+                            Text(
+                                text = label, fontSize = 12.sp, 
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface, 
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
             }
         },
-        confirmButton = { TextButton(onClick = { if (title.isNotBlank() && password.isNotBlank()) onSave(title, username, password) }) { Text("Simpan") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } }
+        // Karena ada fitur "Tanpa Sandi (Clean)", form ini mengizinkan password dibiarkan kosong
+        confirmButton = { TextButton(onClick = { if (title.isNotBlank()) onSave(title, username, password, category) }) { Text(t.save) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(t.cancel) } }
     )
 }

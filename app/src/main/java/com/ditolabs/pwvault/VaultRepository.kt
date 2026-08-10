@@ -8,7 +8,8 @@ import java.io.File
 data class Entry(
     var title: String,
     var username: String,
-    var password: String
+    var password: String,
+    var category: String = "lainnya" // Tambahan baru untuk menyimpan kategori
 )
 
 /**
@@ -41,7 +42,9 @@ class VaultRepository(context: Context) {
                 Entry(
                     title = obj.getString("title"),
                     username = obj.getString("username"),
-                    password = obj.getString("password")
+                    password = obj.getString("password"),
+                    // optString mencegah crash jika membuka database vault versi lama
+                    category = obj.optString("category", "lainnya") 
                 )
             )
         }
@@ -57,6 +60,7 @@ class VaultRepository(context: Context) {
             obj.put("title", e.title)
             obj.put("username", e.username)
             obj.put("password", e.password)
+            obj.put("category", e.category) // Menyimpan kategori saat save
             array.put(obj)
         }
         val plaintext = array.toString().toByteArray(Charsets.UTF_8)
