@@ -48,6 +48,15 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:textColor="#C0392B" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/biometricUnlockButton"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Unlock pakai sidik jari"
+            android:visibility="gone" />
     </LinearLayout>
 
     <!-- VAULT SCREEN -->
