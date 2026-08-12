@@ -92,6 +92,5 @@ single unconfirmed tap).
   worse than making the user add it manually in PwVault.
 - CSV export/import uses a generic `name,url,username,password,notes,category`
   schema â€” it's the closest common denominator across most managers' CSV
-  import, not a guaranteed byte-for-byte match with any specific competitor's
-  column names.
-- App launcher icon is still a stock Android drawable placeholder (R-23).
+  import, not a guaranteed byte-for-byte match with any sstrs  -ulahe user aa mcular sally in PwVault.
+- CS6 âV ert/import ussesne ownric `nP6Cnetpe

@@ -8,9 +8,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ditolabs.pwvault.data.AppLanguage
+import com.ditolabs.pwvault.data.AutoLockDelay
+import com.ditolabs.pwvault.data.PasswordAudit
 import com.ditolabs.pwvault.data.ThemeMode
 import com.ditolabs.pwvault.i18n.LocalStrings
+import com.ditolabs.pwvault.ui.components.IconShieldCheck
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -19,9 +23,12 @@ fun SettingsScreen(
     themeMode: ThemeMode,
     pinEnabled: Boolean,
     biometricEnabled: Boolean,
+    autoLockDelay: AutoLockDelay,
+    securityFindings: List<PasswordAudit.Finding>,
     onBack: () -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
     onThemeChange: (ThemeMode) -> Unit,
+    onAutoLockChange: (AutoLockDelay) -> Unit,
     onTogglePin: (Boolean) -> Unit,
     onToggleBiometric: (Boolean) -> Unit,
     onExportJson: () -> Unit,
@@ -50,6 +57,23 @@ fun SettingsScreen(
                 FilterChip(selected = themeMode == ThemeMode.LIGHT, onClick = { onThemeChange(ThemeMode.LIGHT) }, label = { Text(s["theme_light"]) })
                 Spacer(Modifier.width(8.dp))
                 FilterChip(selected = themeMode == ThemeMode.DARK, onClick = { onThemeChange(ThemeMode.DARK) }, label = { Text(s["theme_dark"]) })
+            }
+
+            Spacer(Modifier.height(24.dp))
+            SectionLabel(s["auto_lock"])
+            Row {
+                listOf(
+                    AutoLockDelay.IMMEDIATE to s["auto_lock_immediate"],
+                    AutoLockDelay.ONE to s["auto_lock_1min"],
+                    AutoLockDelay.FIVE to s["auto_lock_5min"],
+                    AutoLockDelay.NEVER to s["auto_lock_never"],
+                ).forEach { (delay, label) ->
+                    FilterChip(
+                        selected = autoLockDelay == delay, onClick = { onAutoLockChange(delay) },
+                        label = { Text(label, fontSize = 11.sp) },
+                        modifier = Modifier.padding(end = 6.dp),
+                    )
+                }
             }
 
             Spacer(Modifier.height(24.dp))
@@ -84,6 +108,30 @@ fun SettingsScreen(
                     onClick = onRestore,
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 ) { Text(s["restore_backup"]) }
+            }
+
+            Spacer(Modifier.height(28.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+                IconShieldCheck(modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.width(6.dp))
+                Text(s["security_audit"], style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (securityFindings.isEmpty()) {
+                Text(s["security_audit_clean"], style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            } else {
+                securityFindings.forEach { finding ->
+                    val issueLabels = finding.issues.joinToString(" · ") {
+                        when (it) {
+                            PasswordAudit.Issue.WEAK -> s["security_issue_weak"]
+                            PasswordAudit.Issue.DUPLICATE -> s["security_issue_duplicate"]
+                            PasswordAudit.Issue.EMPTY -> s["security_issue_empty"]
+                        }
+                    }
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(finding.entry.title, style = MaterialTheme.typography.bodyMedium)
+                        Text(issueLabels, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    }
+                }
             }
         }
     }

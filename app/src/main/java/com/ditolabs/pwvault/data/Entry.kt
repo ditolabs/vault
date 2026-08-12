@@ -11,6 +11,7 @@ data class Entry(
     var category: String = "lainnya",
     var url: String = "",
     var notes: String = "",
+    var totpSecret: String = "",
     var updatedAtMillis: Long = System.currentTimeMillis()
 )
 

@@ -152,6 +152,49 @@ fun IconMoon(modifier: Modifier = Modifier, tint: Color = LocalContentColor.curr
 }
 
 @Composable
+fun IconRefresh(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
+    Canvas(modifier = modifier) {
+        val s = scale(this.size.minDimension)
+        drawArc(
+            color = tint, startAngle = -220f, sweepAngle = 260f, useCenter = false,
+            topLeft = Offset(3.5f * s, 3.5f * s), size = androidx.compose.ui.geometry.Size(17f * s, 17f * s),
+            style = Stroke(width = 1.6f * s, cap = StrokeCap.Round),
+        )
+        val arrowTip = Offset(19.5f * s, 6.5f * s)
+        drawLine(color = tint, start = arrowTip, end = Offset(15.5f * s, 6f * s), strokeWidth = 1.6f * s, cap = StrokeCap.Round)
+        drawLine(color = tint, start = arrowTip, end = Offset(19f * s, 10.5f * s), strokeWidth = 1.6f * s, cap = StrokeCap.Round)
+    }
+}
+
+@Composable
+fun IconShieldCheck(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
+    Canvas(modifier = modifier) {
+        val s = scale(this.size.minDimension)
+        val path = Path().apply {
+            moveTo(12f * s, 2.5f * s)
+            lineTo(19.5f * s, 6f * s)
+            lineTo(19.5f * s, 12f * s)
+            cubicTo(19.5f * s, 17f * s, 16.3f * s, 20.2f * s, 12f * s, 21.5f * s)
+            cubicTo(7.7f * s, 20.2f * s, 4.5f * s, 17f * s, 4.5f * s, 12f * s)
+            lineTo(4.5f * s, 6f * s)
+            close()
+        }
+        drawPath(path, color = tint, style = Stroke(width = 1.6f * s, cap = StrokeCap.Round))
+        val check = Path().apply { moveTo(8.5f * s, 12f * s); lineTo(11f * s, 14.5f * s); lineTo(15.5f * s, 9f * s) }
+        drawPath(check, color = tint, style = Stroke(width = 1.6f * s, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+    }
+}
+
+@Composable
+fun IconLockClock(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
+    Canvas(modifier = modifier) {
+        val s = scale(this.size.minDimension)
+        drawCircle(color = tint, radius = 9f * s, center = Offset(12f * s, 13f * s), style = Stroke(width = 1.5f * s))
+        drawLine(color = tint, start = Offset(12f * s, 13f * s), end = Offset(12f * s, 8f * s), strokeWidth = 1.4f * s, cap = StrokeCap.Round)
+        drawLine(color = tint, start = Offset(12f * s, 13f * s), end = Offset(15.5f * s, 14.5f * s), strokeWidth = 1.4f * s, cap = StrokeCap.Round)
+    }
+}
+@Composable
 fun IconKey(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
     Canvas(modifier = modifier) {
         val s = scale(this.size.minDimension)

@@ -1,99 +1,38 @@
-# PwVault
+# PwVault 🔐
 
-Password manager Android lokal (offline, tanpa akun/server), ditulis pakai
-Jetpack Compose. Vault terenkripsi AES-GCM, key diturunkan dari master
-password/PIN pakai PBKDF2 (210k iterasi).
+A privacy-first, fully offline Android password manager built with Jetpack Compose.
 
-## Fitur
+PwVault is designed for people who want full control over their own data. There's no account to create, no server involved, and your passwords never touch the internet unless you explicitly move them yourself.
 
-- **Onboarding** sekali muncul di awal (tanpa akun/OTP — PwVault memang nggak
-  punya sistem login berbasis server)
-- Unlock via **Password**, **PIN** (lockout setelah 5x salah), atau
-  **Biometrik** (sidik jari/wajah — satu API yang sama, `BiometricPrompt`)
-- Kategori entry (drawer menu) + search
-- Tap entry = edit langsung (dengan show/hide password), tahan 3 detik =
-  auto-copy password
-- Warning icon buat entry yang passwordnya kosong + tombol "Bersihkan Data
-  Kosong"
-- **Autofill Service** asli Android (bukan Accessibility Service) — muncul
-  sebagai saran isi otomatis di app/browser lain
-- Export/Import JSON & CSV (plaintext — lihat catatan di bawah)
-- **Backup Vault terenkripsi** lewat file picker/share-sheet Android (Drive,
-  email, dst — file-nya tetap AES-GCM, PwVault sendiri tidak pernah
-  konek ke internet)
-- Bahasa Indonesia/English, tema Terang/Gelap/Ikuti sistem — semua switchable
-  langsung di app, nggak perlu restart
+## ✨ Why PwVault
 
-## ⚠️ Soal export vs backup
+- **100% offline** — no accounts, no OTP, no telemetry. The vault lives strictly on your device; PwVault contains no networking code at all.
+- **Real encryption, plainly stated** — entries are stored in an AES-GCM encrypted vault. Keys are derived from your Master Password or PIN via PBKDF2 with 210,000 iterations.
+- **Native Android Autofill** — autofills across other apps and browsers using the official Android Autofill Framework, not an Accessibility Service workaround.
+- **Unlock your way** — Master Password, PIN (with a 5-attempt lockout), or biometrics (fingerprint/face — both go through the same `BiometricPrompt` API).
+- **Genuinely lightweight** — the app deliberately avoids `material-icons-extended`, a dependency that ships ~10,600 icon classes unminified. An earlier build that included it came out to 54MB for an app that uses about 15 icons. Every icon here is hand-drawn with Compose Canvas instead.
+- **Switch instantly** — English/Indonesian and Light/Dark/System theme, no restart required.
+- **Smart interactions** — tap an entry to edit it, hold for 3 seconds to copy the password. Entries with an empty password get flagged with a warning icon, plus a one-tap cleanup action.
 
-- **Export** (JSON/CSV) = plaintext, buat pindah ke password manager lain.
-  Jangan disimpan sembarangan, hapus setelah dipakai kalau bisa.
-- **Backup** = file `.enc` mentah, tetap terenkripsi, aman disimpan di
-  Drive/email — cuma bisa dibuka pakai master password/PIN vault ini.
+## 🛡️ Backup vs. Export
 
-## Download
+- **Encrypted backup (`.enc`)** — a raw copy of the AES-GCM encrypted vault file. Safe to send to Google Drive, email, or local storage through Android's native share sheet — it can't be opened without this vault's password/PIN.
+- **Plaintext export (JSON/CSV)** — for migrating to another manager. These files are *not* encrypted; delete them once you're done.
 
-Cara paling gampang: buka tab **Releases** di repo ini, download APK dari
-rilis terbaru.
+## 🚀 Get Started
 
-Kalau belum ada Release, atau mau versi paling baru dari commit terakhir:
-tab **Actions** → job `Build APK` → download artifact `pwvault-debug-apk`.
+**Download:** grab the latest APK from the [Releases](../../releases) tab.
 
-### Soal signing
+**Bleeding edge:** the **Actions** tab → `Build APK` → download the `pwvault-debug-apk` artifact from the latest run.
 
-APK yang dihasilkan (baik dari Release maupun Actions artifact) itu
-**debug-signed** (pakai debug keystore otomatis dari Gradle) — aman
-diinstall sendiri atau dibagi ke orang yang dipercaya, tapi ini **beda**
-dari signing rilis asli yang dibutuhkan kalau suatu saat mau naik ke Google
-Play (itu butuh keystore rilis sendiri + akun Play Console, proses terpisah
-yang belum di-setup di sini).
+**A note on signing:** every APK above is debug-signed (Gradle's auto-generated debug key), not release-signed. Fine to install yourself or share with people you trust — not the same thing as a Google Play release, which would need its own signing keystore.
 
-## Cara bikin Release baru
+## For developers
 
 ```bash
-git tag v0.3.0
-git push origin v0.3.0
+gradle assembleDebug        # build locally, output in app/build/outputs/apk/debug/
+git tag v0.3.0 && git push origin v0.3.0   # cuts a new GitHub Release automatically
 ```
 
-Push tag otomatis memicu workflow `release.yml` — build APK, lalu attach ke
-GitHub Release baru dengan nama tag itu.
-
-## Cara build manual (opsional, tanpa Android Studio)
-
-Butuh JDK 17 + Android SDK command-line tools, lalu:
-
-```bash
-gradle assembleDebug
-```
-
-Hasil APK ada di `app/build/outputs/apk/debug/app-debug.apk`.
-
-## Struktur
-
-```
-crypto/       VaultCrypto (PBKDF2+AES-GCM), PinUnlock, BiometricVaultUnlock
-data/         Entry model, VaultRepository, ExportImport, SettingsStore, VaultSession
-autofill/     PwVaultAutofillService — real Android Autofill Framework
-i18n/         Strings.kt — runtime ID/EN switch (no activity restart needed)
-ui/screens/   Onboarding, Lock, VaultList, EntryEdit, Settings
-ui/components/ Hand-drawn Canvas icons (see "Soal icon" di bawah) + VaultLogo
-ui/theme/     Light/dark color schemes
-```
-
-## Soal icon
-
-Semua icon digambar manual pakai Compose Canvas (`ui/components/AppIcons.kt`,
-`VaultLogo.kt`) — bukan dari `material-icons-extended`. Itu keputusan sadar:
-`-extended` isinya ~10.600 kelas icon unminified, yang pernah bikin build
-awal (dari referensi Gemini) membengkak jadi 54MB untuk app yang cuma butuh
-belasan icon. Kalau nambah fitur baru butuh icon yang belum ada, gambar
-manual di `AppIcons.kt` mengikuti pola yang sudah ada, jangan tambah
-dependency `-extended`.
-
-## Roadmap / keterbatasan jujur
-
-Lihat bagian "Known open items" di `DESIGN.md` — di antaranya: kategori masih
-fixed (belum ada custom category), autofill matching masih heuristik
-sederhana (bukan verifikasi domain kayak browser), autofill "save" (nangkep
-password baru dari app lain) sengaja belum diimplementasi, dan APK belum
-release-signed (lihat "Soal signing" di atas).
+Project structure, design rationale, and known limitations are documented in
+`DESIGN.md` and `CLAUDE.md`.

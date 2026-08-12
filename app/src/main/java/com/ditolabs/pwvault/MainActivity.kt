@@ -36,6 +36,10 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Blocks screenshots and screen recording of the whole app (including
+        // the recent-apps thumbnail) — a password manager's screens shouldn't
+        // be capturable, no toggle needed for this one.
+        window.setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE)
         setContent { PwVaultApp() }
     }
 }
@@ -50,6 +54,35 @@ private fun PwVaultApp() {
     val themeMode by vm.themeMode.collectAsState()
     val unlocked by vm.unlocked.collectAsState()
     val entries by vm.entries.collectAsState()
+    val autoLockDelay by vm.autoLockDelay.collectAsState()
+
+    // Auto-lock: remember when the app went to background, and if we come
+    // back after the configured delay (or immediately, for IMMEDIATE), force
+    // a re-unlock. NEVER disables this entirely.
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, autoLockDelay, unlocked) {
+        var backgroundedAt = 0L
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_STOP -> {
+                    backgroundedAt = System.currentTimeMillis()
+                }
+                androidx.lifecycle.Lifecycle.Event.ON_START -> {
+                    if (unlocked && backgroundedAt > 0 && autoLockDelay != com.ditolabs.pwvault.data.AutoLockDelay.NEVER) {
+                        val elapsedMinutes = (System.currentTimeMillis() - backgroundedAt) / 60000.0
+                        val threshold = autoLockDelay.minutes
+                        if (elapsedMinutes >= threshold) {
+                            vm.lock()
+                            nav.navigate("lock") { popUpTo(0) }
+                        }
+                    }
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     PwVaultTheme(themeMode) {
         CompositionLocalProvider(LocalStrings provides Strings(language)) {
@@ -127,10 +160,12 @@ private fun SettingsScreenRoute(vm: VaultViewModel, nav: androidx.navigation.Nav
     val context = LocalContext.current
     val language by vm.language.collectAsState()
     val themeMode by vm.themeMode.collectAsState()
+    val autoLockDelay by vm.autoLockDelay.collectAsState()
     var pinEnabled by remember { mutableStateOf(vm.pinUnlock.isEnabled()) }
     var biometricEnabled by remember { mutableStateOf(vm.biometricUnlock.isEnabled()) }
     var showPinSetup by remember { mutableStateOf(false) }
     val entries by vm.entries.collectAsState()
+    val securityFindings = remember(entries) { vm.securityFindings() }
 
     val exportJsonLauncher = rememberLauncherForExport(context, "vault-export.json") {
         ExportImport.toJson(entries)
@@ -165,9 +200,12 @@ private fun SettingsScreenRoute(vm: VaultViewModel, nav: androidx.navigation.Nav
         themeMode = themeMode,
         pinEnabled = pinEnabled,
         biometricEnabled = biometricEnabled,
+        autoLockDelay = autoLockDelay,
+        securityFindings = securityFindings,
         onBack = onBack,
         onLanguageChange = { vm.setLanguage(it) },
         onThemeChange = { vm.setThemeMode(it) },
+        onAutoLockChange = { vm.setAutoLockDelay(it) },
         onTogglePin = { enabled ->
             if (enabled) showPinSetup = true
             else { vm.pinUnlock.disable(); pinEnabled = false }

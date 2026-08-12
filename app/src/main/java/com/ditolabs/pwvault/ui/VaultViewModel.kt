@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.ditolabs.pwvault.crypto.BiometricVaultUnlock
 import com.ditolabs.pwvault.crypto.PinUnlock
 import com.ditolabs.pwvault.data.AppLanguage
+import com.ditolabs.pwvault.data.AutoLockDelay
 import com.ditolabs.pwvault.data.Entry
 import com.ditolabs.pwvault.data.SettingsStore
 import com.ditolabs.pwvault.data.ThemeMode
@@ -32,16 +33,22 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
 
     val language: StateFlow<AppLanguage> get() = languageState
     val themeMode: StateFlow<ThemeMode> get() = themeModeState
+    val autoLockDelay: StateFlow<AutoLockDelay> get() = autoLockState
     private val languageState = MutableStateFlow(AppLanguage.ID)
     private val themeModeState = MutableStateFlow(ThemeMode.SYSTEM)
+    private val autoLockState = MutableStateFlow(AutoLockDelay.FIVE)
 
     init {
         viewModelScope.launch { settings.language.collect { languageState.value = it } }
         viewModelScope.launch { settings.themeMode.collect { themeModeState.value = it } }
+        viewModelScope.launch { settings.autoLockDelay.collect { autoLockState.value = it } }
     }
 
     fun setLanguage(lang: AppLanguage) = viewModelScope.launch { settings.setLanguage(lang) }
     fun setThemeMode(mode: ThemeMode) = viewModelScope.launch { settings.setThemeMode(mode) }
+    fun setAutoLockDelay(delay: AutoLockDelay) = viewModelScope.launch { settings.setAutoLockDelay(delay) }
+
+    fun securityFindings() = com.ditolabs.pwvault.data.PasswordAudit.audit(_entries.value)
 
     fun vaultExists() = repo.vaultExists()
 

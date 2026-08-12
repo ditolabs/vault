@@ -1,5 +1,6 @@
 package com.ditolabs.pwvault.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -16,10 +17,13 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import com.ditolabs.pwvault.crypto.PasswordGenerator
+import com.ditolabs.pwvault.crypto.Totp
 import com.ditolabs.pwvault.data.Categories
 import com.ditolabs.pwvault.data.Entry
 import com.ditolabs.pwvault.i18n.LocalStrings
 import com.ditolabs.pwvault.ui.components.IconContentCopy
+import com.ditolabs.pwvault.ui.components.IconRefresh
 import com.ditolabs.pwvault.ui.components.IconVisibility
 import java.util.UUID
 
@@ -37,7 +41,9 @@ fun EntryEditScreen(
     var username by remember { mutableStateOf(existing?.username ?: "") }
     var password by remember { mutableStateOf(existing?.password ?: "") }
     var category by remember { mutableStateOf(existing?.category ?: "lainnya") }
+    var totpSecret by remember { mutableStateOf(existing?.totpSecret ?: "") }
     var categoryMenuOpen by remember { mutableStateOf(false) }
+    var showGenerator by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -53,7 +59,13 @@ fun EntryEditScreen(
             FieldWithCopy(s["username_label"], username, { username = it }, clipboard, mono = false)
             Spacer(Modifier.height(12.dp))
             FieldWithCopy(s["password_label"], password, { password = it }, clipboard, mono = true, isSecret = true)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(6.dp))
+            TextButton(onClick = { showGenerator = true }) {
+                IconRefresh(modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(s["generate_password"], style = MaterialTheme.typography.labelMedium)
+            }
+            Spacer(Modifier.height(6.dp))
 
             ExposedDropdownMenuBox(expanded = categoryMenuOpen, onExpandedChange = { categoryMenuOpen = it }) {
                 OutlinedTextField(
@@ -70,6 +82,22 @@ fun EntryEditScreen(
                 }
             }
 
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = totpSecret, onValueChange = { totpSecret = it },
+                label = { Text(s["totp_secret_label"]) },
+                placeholder = { Text("JBSWY3DPEHPK3PXP") },
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (totpSecret.isNotBlank() && Totp.isValidSecret(totpSecret)) {
+                Spacer(Modifier.height(8.dp))
+                TotpCodeCard(totpSecret, clipboard)
+            } else if (totpSecret.isNotBlank()) {
+                Text(s["totp_invalid"], color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+            }
+
             Spacer(Modifier.height(24.dp))
             Row {
                 Button(
@@ -78,6 +106,7 @@ fun EntryEditScreen(
                             Entry(
                                 id = existing?.id ?: UUID.randomUUID().toString(),
                                 title = title, username = username, password = password, category = category,
+                                totpSecret = totpSecret,
                                 updatedAtMillis = System.currentTimeMillis(),
                             )
                         )
@@ -100,6 +129,95 @@ fun EntryEditScreen(
                 }
             }
         }
+    }
+
+    if (showGenerator) {
+        PasswordGeneratorDialog(
+            onDismiss = { showGenerator = false },
+            onUse = { generated -> password = generated; showGenerator = false },
+        )
+    }
+}
+
+@Composable
+private fun TotpCodeCard(secret: String, clipboard: ClipboardManager) {
+    val s = LocalStrings.current
+    var code by remember { mutableStateOf(Totp.currentCode(secret)) }
+    var secondsLeft by remember { mutableStateOf(Totp.secondsRemaining()) }
+
+    LaunchedEffect(secret) {
+        while (true) {
+            code = Totp.currentCode(secret)
+            secondsLeft = Totp.secondsRemaining()
+            kotlinx.coroutines.delay(1000)
+        }
+    }
+
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(s["totp_code_label"], style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                code.chunked(3).joinToString(" "),
+                style = MaterialTheme.typography.headlineSmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Text("${secondsLeft}s", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.width(8.dp))
+        IconButton(onClick = { clipboard.setText(AnnotatedString(code)) }) {
+            IconContentCopy(modifier = Modifier.size(18.dp))
+        }
+    }
+}
+
+@Composable
+private fun PasswordGeneratorDialog(onDismiss: () -> Unit, onUse: (String) -> Unit) {
+    val s = LocalStrings.current
+    var length by remember { mutableStateOf(16f) }
+    var useUpper by remember { mutableStateOf(true) }
+    var useDigits by remember { mutableStateOf(true) }
+    var useSymbols by remember { mutableStateOf(true) }
+    var generated by remember { mutableStateOf(PasswordGenerator.generate(16, true, true, true)) }
+
+    fun regenerate() { generated = PasswordGenerator.generate(length.toInt(), useUpper, useDigits, useSymbols) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(s["generate_password"]) },
+        text = {
+            Column {
+                Row(
+                    Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant, androidx.compose.foundation.shape.RoundedCornerShape(4.dp)).padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(generated, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    IconButton(onClick = { regenerate() }) { IconRefresh(modifier = Modifier.size(18.dp)) }
+                }
+                Spacer(Modifier.height(12.dp))
+                Text("${s["password_length"]}: ${length.toInt()}", style = MaterialTheme.typography.labelMedium)
+                Slider(value = length, onValueChange = { length = it; regenerate() }, valueRange = 8f..32f, steps = 23)
+                CheckboxRow(s["use_uppercase"], useUpper) { useUpper = it; regenerate() }
+                CheckboxRow(s["use_digits"], useDigits) { useDigits = it; regenerate() }
+                CheckboxRow(s["use_symbols"], useSymbols) { useSymbols = it; regenerate() }
+            }
+        },
+        confirmButton = { TextButton(onClick = { onUse(generated) }) { Text(s["use_password"]) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(s["cancel"]) } },
+    )
+}
+
+@Composable
+private fun CheckboxRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(checked = checked, onCheckedChange = onChange)
+        Text(label, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
