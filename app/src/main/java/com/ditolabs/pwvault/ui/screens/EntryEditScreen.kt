@@ -6,10 +6,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.ditolabs.pwvault.data.Categories
 import com.ditolabs.pwvault.data.Entry
 import com.ditolabs.pwvault.i18n.LocalStrings
+import com.ditolabs.pwvault.ui.components.IconContentCopy
+import com.ditolabs.pwvault.ui.components.IconVisibility
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,7 +115,7 @@ private fun FieldWithCopy(label: String, value: String, onChange: (String) -> Un
             trailingIcon = if (isSecret) {
                 {
                     IconButton(onClick = { revealed = !revealed }) {
-                        Icon(if (revealed) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, null)
+                        IconVisibility(crossedOut = !revealed)
                     }
                 }
             } else null,
@@ -128,7 +127,7 @@ private fun FieldWithCopy(label: String, value: String, onChange: (String) -> Un
             copied = true
         }) {
             if (copied) Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary)
-            else Icon(Icons.Filled.ContentCopy, null)
+            else IconContentCopy()
         }
     }
     if (copied) LaunchedEffect(value) { kotlinx.coroutines.delay(1500); copied = false }

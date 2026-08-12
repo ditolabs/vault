@@ -11,12 +11,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Backspace
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +25,11 @@ import androidx.compose.ui.unit.sp
 import com.ditolabs.pwvault.data.AppLanguage
 import com.ditolabs.pwvault.data.ThemeMode
 import com.ditolabs.pwvault.i18n.LocalStrings
+import com.ditolabs.pwvault.ui.components.IconBackspace
+import com.ditolabs.pwvault.ui.components.IconFingerprint
+import com.ditolabs.pwvault.ui.components.IconMoon
+import com.ditolabs.pwvault.ui.components.IconShield
+import com.ditolabs.pwvault.ui.components.IconSun
 import com.ditolabs.pwvault.ui.components.VaultLogo
 
 enum class LockTab { PIN, PASSWORD, BIOMETRIC }
@@ -74,9 +73,10 @@ fun LockScreen(
                 onClick = onToggleTheme, shape = RoundedCornerShape(4.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), color = androidx.compose.ui.graphics.Color.Transparent,
             ) {
-                Box(Modifier.size(30.dp), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(30.dp), contentAlignment = Alignment.Center) {
                     val showSun = themeMode == ThemeMode.DARK
-                    Icon(if (showSun) Icons.Filled.WbSunny else Icons.Filled.DarkMode, null, modifier = Modifier.size(15.dp))
+                    if (showSun) IconSun(modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.onSurface)
+                    else IconMoon(modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.onSurface)
                 }
             }
         }
@@ -126,7 +126,7 @@ fun LockScreen(
                 .padding(horizontal = 12.dp, vertical = 5.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Filled.Shield, null, modifier = Modifier.size(11.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            IconShield(modifier = Modifier.size(11.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(6.dp))
             Text(s["offline_mode"], fontSize = 10.sp, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -193,7 +193,7 @@ private fun PinTab(attemptsLeft: Int, lockedUntil: Long, error: String?, onSubmi
                     "⌫" -> Box(
                         Modifier.size(56.dp).clickable(enabled = !isLocked) { pin = pin.dropLast(1) },
                         contentAlignment = Alignment.Center,
-                    ) { Icon(Icons.Filled.Backspace, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp)) }
+                    ) { IconBackspace(tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp)) }
                     else -> Box(
                         Modifier
                             .size(56.dp)
@@ -223,7 +223,7 @@ private fun BiometricTab(onTrigger: () -> Unit) {
                 .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                 .clickable { onTrigger() },
             contentAlignment = Alignment.Center,
-        ) { Icon(Icons.Filled.Fingerprint, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp)) }
+        ) { IconFingerprint(tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp)) }
         Spacer(Modifier.height(14.dp))
         Text(s["unlock_with_biometric"], fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
     }
