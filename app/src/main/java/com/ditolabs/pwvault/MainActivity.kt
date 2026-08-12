@@ -1,8 +1,8 @@
 package com.ditolabs.pwvault
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.*
@@ -28,7 +28,7 @@ import com.ditolabs.pwvault.ui.screens.SettingsScreen
 import com.ditolabs.pwvault.ui.screens.VaultListScreen
 import com.ditolabs.pwvault.ui.theme.PwVaultTheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     companion object {
         const val EXTRA_AUTOFILL_UNLOCK = "autofill_unlock"
@@ -160,7 +160,7 @@ private fun SettingsScreenRoute(vm: VaultViewModel, onBack: () -> Unit) {
             if (enabled) {
                 val pw = vm.currentMasterPassword()
                 if (pw != null) {
-                    val activity = context as ComponentActivity
+                    val activity = context as FragmentActivity
                     val cipher = vm.biometricUnlock.prepareEncryptCipher()
                     val prompt = BiometricPrompt(
                         activity, ContextCompat.getMainExecutor(context),
@@ -228,7 +228,7 @@ private fun copyToClipboard(context: android.content.Context, text: String) {
 }
 
 private fun triggerBiometricUnlock(context: android.content.Context, vm: VaultViewModel, onSuccess: () -> Unit) {
-    val activity = context as? ComponentActivity ?: return
+    val activity = context as? FragmentActivity ?: return
     val cipher = try { vm.biometricUnlock.prepareDecryptCipher() } catch (e: Exception) { return }
     val prompt = BiometricPrompt(
         activity, ContextCompat.getMainExecutor(context),
