@@ -52,8 +52,31 @@ counterproductive to trust.
 
 ## Dial
 
-Dial: ENERGY 1 / RHYTHM 1 / MOTION 1
-Utility/security tool — calm, predictable, no decorative motion.
+Dial: ENERGY 2 / RHYTHM 1 / MOTION 1 (bumped from ENERGY 1 on request — the
+onboarding screen and pill-shaped primary CTA read as more welcoming than the
+original strictly-utilitarian pass; RHYTHM/MOTION stay calm since this is
+still a security tool, not a marketing surface).
+
+## First-launch onboarding
+
+A one-time welcome screen (shown only when no vault exists yet) borrows the
+visual warmth of a reference login-screen image — illustration, friendly
+copy, generous spacing — but deliberately drops its actual mechanism: no
+phone number, no OTP, no Google/Apple sign-in. PwVault has no accounts and no
+server; "Mulai" leads straight into creating a local vault, the only "login"
+this app has. Adopting the visual language without the auth mechanism it was
+built for is the point — see R-30 (don't clone) and R-20 (swap-the-logo test).
+
+## Backup
+
+"Backup Vault" writes the RAW ENCRYPTED `vault.enc` bytes (never decrypted
+plaintext) through Android's own file picker/share sheet — Drive and email
+typically appear there without any Drive API or OAuth integration. This does
+not compromise the offline positioning: PwVault contains no networking code
+either way; the OS picker is a manual, user-initiated action, not something
+the app does on its own or on a schedule. Restore requires a destructive-action
+confirmation (R-26 — this action overwrites the whole vault, so it can't be a
+single unconfirmed tap).
 
 ## Known open items / honest limitations
 

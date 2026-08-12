@@ -115,7 +115,7 @@ private fun FieldWithCopy(label: String, value: String, onChange: (String) -> Un
             trailingIcon = if (isSecret) {
                 {
                     IconButton(onClick = { revealed = !revealed }) {
-                        IconVisibility(crossedOut = !revealed)
+                        IconVisibility(crossedOut = !revealed, modifier = Modifier.size(22.dp))
                     }
                 }
             } else null,
@@ -127,7 +127,7 @@ private fun FieldWithCopy(label: String, value: String, onChange: (String) -> Un
             copied = true
         }) {
             if (copied) Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary)
-            else IconContentCopy()
+            else IconContentCopy(modifier = Modifier.size(20.dp))
         }
     }
     if (copied) LaunchedEffect(value) { kotlinx.coroutines.delay(1500); copied = false }

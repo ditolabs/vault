@@ -27,6 +27,8 @@ fun SettingsScreen(
     onExportJson: () -> Unit,
     onExportCsv: () -> Unit,
     onImport: () -> Unit,
+    onBackup: () -> Unit,
+    onRestore: () -> Unit,
 ) {
     val s = LocalStrings.current
     Scaffold(topBar = {
@@ -71,6 +73,18 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(8.dp))
             OutlinedButton(onClick = onImport) { Text(s["import_vault"]) }
+
+            Spacer(Modifier.height(28.dp))
+            SectionLabel(s["backup_vault"])
+            Text(s["backup_note"], style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 10.dp))
+            Row {
+                Button(onClick = onBackup) { Text(s["backup_vault"]) }
+                Spacer(Modifier.width(8.dp))
+                OutlinedButton(
+                    onClick = onRestore,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) { Text(s["restore_backup"]) }
+            }
         }
     }
 }

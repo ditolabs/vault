@@ -54,7 +54,10 @@ private fun PwVaultApp() {
     PwVaultTheme(themeMode) {
         CompositionLocalProvider(LocalStrings provides Strings(language)) {
             Surface(modifier = Modifier.fillMaxSize()) {
-                NavHost(navController = nav, startDestination = "lock") {
+                NavHost(navController = nav, startDestination = if (vm.vaultExists()) "lock" else "onboarding") {
+                    composable("onboarding") {
+                        com.ditolabs.pwvault.ui.screens.OnboardingScreen(onGetStarted = { nav.navigate("lock") { popUpTo("onboarding") { inclusive = true } } })
+                    }
                     composable("lock") {
                         val pinAttempts = vm.pinUnlock.currentLockout()
                         LockScreen(
@@ -111,7 +114,7 @@ private fun PwVaultApp() {
                         )
                     }
                     composable("settings") {
-                        SettingsScreenRoute(vm, onBack = { nav.popBackStack() })
+                        SettingsScreenRoute(vm, nav, onBack = { nav.popBackStack() })
                     }
                 }
             }
@@ -120,7 +123,7 @@ private fun PwVaultApp() {
 }
 
 @Composable
-private fun SettingsScreenRoute(vm: VaultViewModel, onBack: () -> Unit) {
+private fun SettingsScreenRoute(vm: VaultViewModel, nav: androidx.navigation.NavHostController, onBack: () -> Unit) {
     val context = LocalContext.current
     val language by vm.language.collectAsState()
     val themeMode by vm.themeMode.collectAsState()
@@ -142,6 +145,19 @@ private fun SettingsScreenRoute(vm: VaultViewModel, onBack: () -> Unit) {
             val imported = if (text.trimStart().startsWith("{")) ExportImport.fromJson(text) else ExportImport.fromCsv(text)
             vm.importEntries(imported)
         }
+    }
+
+    // Backup writes the RAW ENCRYPTED vault.enc bytes — never decrypted plaintext.
+    // Safe to hand to Drive/email precisely because it stays unreadable without
+    // this vault's master password/PIN.
+    val backupLauncher = androidx.activity.compose.rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        context.contentResolver.openOutputStream(uri)?.use { it.write(vm.repo.rawEncryptedBytes()) }
+    }
+    var pendingRestoreBytes by remember { mutableStateOf<ByteArray?>(null) }
+    val restoreLauncher = androidx.activity.compose.rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        context.contentResolver.openInputStream(uri)?.use { pendingRestoreBytes = it.readBytes() }
     }
 
     SettingsScreen(
@@ -179,6 +195,8 @@ private fun SettingsScreenRoute(vm: VaultViewModel, onBack: () -> Unit) {
         onExportJson = { exportJsonLauncher() },
         onExportCsv = { exportCsvLauncher() },
         onImport = { importLauncher.launch(arrayOf("*/*")) },
+        onBackup = { backupLauncher.launch("pwvault-backup.enc") },
+        onRestore = { restoreLauncher.launch(arrayOf("*/*")) },
     )
 
     if (showPinSetup) {
@@ -189,6 +207,24 @@ private fun SettingsScreenRoute(vm: VaultViewModel, onBack: () -> Unit) {
                 pinEnabled = true
                 showPinSetup = false
             }
+        )
+    }
+
+    pendingRestoreBytes?.let { bytes ->
+        val s = LocalStrings.current
+        AlertDialog(
+            onDismissRequest = { pendingRestoreBytes = null },
+            title = { Text(s["restore_confirm_title"]) },
+            text = { Text(s["restore_confirm_message"]) },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.repo.restoreFromRawBytes(bytes)
+                    pendingRestoreBytes = null
+                    vm.lock()
+                    nav.navigate("lock") { popUpTo(0) }
+                }) { Text(s["restore_confirm_action"], color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { pendingRestoreBytes = null }) { Text(s["cancel"]) } },
         )
     }
 }

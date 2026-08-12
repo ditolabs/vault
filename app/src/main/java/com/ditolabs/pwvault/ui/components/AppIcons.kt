@@ -150,3 +150,35 @@ fun IconMoon(modifier: Modifier = Modifier, tint: Color = LocalContentColor.curr
         drawPath(path, color = tint)
     }
 }
+
+@Composable
+fun IconKey(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
+    Canvas(modifier = modifier) {
+        val s = scale(this.size.minDimension)
+        drawCircle(color = tint, radius = 3.2f * s, center = Offset(6.5f * s, 12f * s), style = Stroke(width = 1.5f * s))
+        drawLine(color = tint, start = Offset(9.5f * s, 12f * s), end = Offset(21f * s, 12f * s), strokeWidth = 1.5f * s, cap = StrokeCap.Round)
+        drawLine(color = tint, start = Offset(16.5f * s, 12f * s), end = Offset(16.5f * s, 16f * s), strokeWidth = 1.5f * s, cap = StrokeCap.Round)
+        drawLine(color = tint, start = Offset(19.5f * s, 12f * s), end = Offset(19.5f * s, 15f * s), strokeWidth = 1.5f * s, cap = StrokeCap.Round)
+    }
+}
+
+@Composable
+fun IconBackupCloud(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
+    Canvas(modifier = modifier) {
+        val s = scale(this.size.minDimension)
+        val path = Path().apply {
+            moveTo(7f * s, 18f * s)
+            cubicTo(4f * s, 18f * s, 2f * s, 16f * s, 2f * s, 13.3f * s)
+            cubicTo(2f * s, 10.9f * s, 3.8f * s, 9f * s, 6f * s, 8.7f * s)
+            cubicTo(6.7f * s, 5.9f * s, 9.2f * s, 4f * s, 12f * s, 4f * s)
+            cubicTo(15.3f * s, 4f * s, 18f * s, 6.6f * s, 18.2f * s, 9.8f * s)
+            cubicTo(20.4f * s, 10.3f * s, 22f * s, 12.1f * s, 22f * s, 14.3f * s)
+            cubicTo(22f * s, 16.6f * s, 20f * s, 18f * s, 17.5f * s, 18f * s)
+            close()
+        }
+        drawPath(path, color = tint, style = Stroke(width = 1.5f * s, cap = StrokeCap.Round))
+        drawLine(color = tint, start = Offset(12f * s, 11f * s), end = Offset(12f * s, 20f * s), strokeWidth = 1.5f * s, cap = StrokeCap.Round)
+        drawLine(color = tint, start = Offset(9f * s, 14f * s), end = Offset(12f * s, 11f * s), strokeWidth = 1.5f * s, cap = StrokeCap.Round)
+        drawLine(color = tint, start = Offset(15f * s, 14f * s), end = Offset(12f * s, 11f * s), strokeWidth = 1.5f * s, cap = StrokeCap.Round)
+    }
+}

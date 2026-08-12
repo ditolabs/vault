@@ -30,4 +30,16 @@ class VaultRepository(context: Context) {
         val plaintext = json.encodeToString(VaultData(entries))
         vaultFile.writeBytes(VaultCrypto.encrypt(plaintext.toByteArray(Charsets.UTF_8), masterPassword, salt))
     }
+
+    /** Raw encrypted bytes for backup — never decrypted, safe to hand to any
+     * external storage (Drive, email) since it's unreadable without the
+     * master password/PIN that was used to create this vault. */
+    fun rawEncryptedBytes(): ByteArray = vaultFile.readBytes()
+
+    /** Overwrites the current vault with a previously backed-up encrypted blob.
+     * Caller is responsible for locking/forcing re-unlock afterward, since the
+     * in-memory master password may no longer match. */
+    fun restoreFromRawBytes(bytes: ByteArray) {
+        vaultFile.writeBytes(bytes)
+    }
 }
