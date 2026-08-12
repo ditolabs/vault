@@ -1,9 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Tema dasar minimalis untuk peluncuran Jetpack Compose -->
-    <style name="Theme.PwVault" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <!-- Warna background awal saat aplikasi diklik (sebelum Compose selesai loading) -->
-        <item name="android:windowBackground">@color/ink_900</item>
-        <item name="android:statusBarColor">@color/ink_900</item>
+    <style name="Theme.PwVault" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

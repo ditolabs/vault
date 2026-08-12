@@ -1,10 +1,13 @@
 # CLAUDE.md — PwVault
 
 For any UI/layout/copy work in this repo: read `DESIGN.md` first for
-direction (identity, palette, tone, dial), then `ANTISLOP.md` as the filter
-before delivering. Run the Delivery Gate in `ANTISLOP.md` before calling any
-UI change done.
+direction, then `ANTISLOP.md` as the filter before delivering. Run the
+Delivery Gate in `ANTISLOP.md` before calling any UI change done.
 
-This is a native Android app (Kotlin + XML views, no Compose). "UI work"
-includes: `res/layout/*.xml`, `res/values/{colors,themes,strings}.xml`, and
-any button/dialog copy in `*.kt` files.
+Stack: Jetpack Compose (Kotlin), Material3. No XML layouts except the single
+launch theme (`res/values/themes.xml`) and the autofill service descriptor.
+"UI work" includes anything under `ui/screens/`, `ui/theme/`, `i18n/Strings.kt`,
+and button/dialog copy anywhere else in `*.kt`.
+
+Icon rule (non-negotiable, see DESIGN.md): only
+`androidx.compose.material:material-icons-core`, never `-extended`.

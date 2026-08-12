@@ -1,37 +1,46 @@
 # PwVault
 
-Password manager Android sederhana. Vault terenkripsi AES-GCM, key diturunkan
-dari master password pakai PBKDF2 (210k iterasi). Belum ada autofill service —
-saat ini akses password lewat clipboard (auto-clear 30 detik).
+Password manager Android, ditulis pakai Jetpack Compose. Vault terenkripsi
+AES-GCM, key diturunkan dari master password/PIN pakai PBKDF2 (210k iterasi).
 
-## Cara pakai repo ini
+## Fitur
 
-1. Push folder ini ke repo GitHub kamu (`git init`, `git add .`, `git commit`, `git push`).
-2. GitHub Actions (`.github/workflows/build.yml`) otomatis build APK debug tiap
-   push ke branch `main`. Cek tab **Actions** → job selesai → download artifact
-   `pwvault-debug-apk`.
-3. APK debug itu belum di-sign untuk release, tapi bisa langsung di-install ke
-   HP kamu sendiri (enable "install dari sumber tidak dikenal" / unknown sources).
+- Unlock via **Password**, **PIN** (dengan lockout setelah 5x salah), atau
+  **Biometrik** (sidik jari/wajah — satu API yang sama, `BiometricPrompt`)
+- Kategori entry (drawer menu) + search
+- Tap entry = edit langsung, tahan 3 detik = auto-copy password
+- **Autofill Service** asli Android (bukan Accessibility Service) — muncul
+  sebagai saran isi otomatis di app/browser lain
+- Export/Import JSON & CSV (lihat catatan keamanan di bawah)
+- Bahasa Indonesia/English, tema Terang/Gelap/Ikuti sistem — semua switchable
+  langsung di app, nggak perlu restart
 
-## Kalau mau build manual (opsional, tanpa Android Studio)
+## ⚠️ Soal export
 
-Butuh: JDK 17 dan Android SDK command-line tools terpasang, lalu:
+File hasil export **TIDAK terenkripsi** — itu situasinya inheren kalau mau
+dibaca app lain. Jangan simpan sembarangan, hapus setelah dipakai kalau bisa.
 
-```
-gradle assembleDebug
-```
+## Cara build
 
-Hasil APK ada di `app/build/outputs/apk/debug/app-debug.apk`.
+Push ke GitHub → tab **Actions** → job `Build APK` jalan otomatis → download
+artifact `pwvault-debug-apk`.
+
+Manual (tanpa Android Studio): `gradle assembleDebug`, hasil ada di
+`app/build/outputs/apk/debug/app-debug.apk`.
 
 ## Struktur
 
-- `VaultCrypto.kt` — derivasi key (PBKDF2) + enkripsi/dekripsi (AES/GCM)
-- `VaultRepository.kt` — baca/tulis file vault terenkripsi di storage privat app
-- `MainActivity.kt` — UI: unlock/create vault, list entry, tambah/hapus, copy password
+```
+crypto/   VaultCrypto (PBKDF2+AES-GCM), PinUnlock, BiometricVaultUnlock
+data/     Entry model, VaultRepository, ExportImport, SettingsStore, VaultSession
+autofill/ PwVaultAutofillService — real Android Autofill Framework
+i18n/     Strings.kt — runtime ID/EN switch (no activity restart needed)
+ui/       Compose screens (Lock, VaultList, EntryEdit, Settings) + theme
+```
 
-## Roadmap
+## Roadmap / keterbatasan jujur
 
-- [ ] Autofill Service (biar bisa isi password otomatis di app/browser lain)
-- [ ] Edit entry yang sudah ada
-- [ ] Export/import vault terenkripsi buat backup
-- [ ] Biometric unlock (opsional, di atas master password)
+Lihat bagian "Known open items" di `DESIGN.md` — di antaranya: kategori masih
+fixed (belum ada custom category), autofill matching masih heuristik
+sederhana (bukan verifikasi domain kayak browser), autofill "save" (nangkep
+password baru dari app lain) sengaja belum diimplementasi.

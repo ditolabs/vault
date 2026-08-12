@@ -7,104 +7,58 @@
 
 `ANTISLOP.md` is a **filter**, not a style guide. It stops AI coding agents from producing generic, recognizable "AI slop" UI, without falling into the opposite failure: a sterile, lifeless default.
 
-- This document does **not** impose an aesthetic: no prescribed colors, fonts, layouts, or "house style".
-- This document does **not** ban visual techniques (gradients, glassmorphism, badges, card grids). Those are tools. What it rejects is **technique without purpose**.
-- This document does two things only:
-  1. Holds every visual decision to a **purpose test**: what does this technique serve? Write the reason down.
-  2. Holds the result to a **liveliness bar**: the output must be alive and specific, not just "clean". See Part 3.
+- Does not impose an aesthetic (colors, fonts, layouts) — `DESIGN.md` does that.
+- Does not ban visual techniques — it rejects **technique without purpose**.
+- Holds every visual decision to a purpose test, and the result to a liveliness bar.
 
-`ANTISLOP.md` is one of three files, and it is a **filter, not a source of direction**:
-
-- `DESIGN.md` (or your brand/style direction) gives the design its **soul**: identity, personality, palette, typography, mood.
-- `CLAUDE.md` (or `AGENTS.md`) routes the agent: "for UI work, read `DESIGN.md` for direction, then `ANTISLOP.md` as the filter."
-- `ANTISLOP.md` rejects slop and requires liveliness. It does not invent direction; the Design Read (Part 3) turns a brief into dials.
-
-Removing slop does not reveal good design; it leaves a void. Liveliness must be **added**, not assumed.
-
-## Core Principle
-
-The filter rejects technique without purpose, not technique itself. Before using any visual technique, answer: **what does this serve?** If the only answer is "it looks AI" or "it looks safe", the technique must go or be reworked.
+`ANTISLOP.md` rejects slop and requires liveliness. It does not invent direction.
 
 The question to answer before calling anything done:
 > If the logo and product name were swapped out, would this design still feel unique and have its own character?
-
-A design is **done** only when all three are true:
-1. Every technique passes the purpose test (Part 2, Purpose-Gate group).
-2. It has its own identity and character (Part 3: Liveliness Toolkit).
-3. It actually works (Craftsmanship Standard).
 
 ## The Craftsmanship Standard
 
 - **C-1 Intentionality**: every decision has a reason you can articulate.
 - **C-2 Functional Completeness**: every interactive element works, or it does not exist.
-- **C-3 Content-Driven Composition**: every section/screen exists because the product needs it.
-- **C-4 Resilience**: the UI holds up in every state (empty, loading, error), theme, and input method.
+- **C-3 Content-Driven Composition**: every screen exists because the product needs it.
+- **C-4 Resilience**: holds up in every state (empty, loading, error), theme, and input method.
 - **C-5 Evidence Over Claims**: anything presented as fact is real and verifiable, or not shown.
-
----
 
 ## Part 2: Mandatory Rules (grouped)
 
-### Group 1: Hard Gate (absolute, no exceptions)
+### Group 1: Hard Gate
+- **R-02**: no em dash (—) in copy.
+- **R-03**: layout works at target screen sizes; no clipped/overlapping elements.
+- **R-17/R-18**: no fake stats/testimonials.
+- **R-24**: no nav items pointing nowhere.
+- **R-25**: WCAG AA contrast minimum.
+- **R-26**: every control has real behavior or doesn't exist.
+- **R-27**: every data view needs empty, loading, and error states.
+- **R-32**: keyboard/input accessible, visible focus indicator.
+- **R-34**: if light/dark both shipped, both fully functional.
+- **R-35**: verify (build/exercise) before calling it done.
+- **R-36**: no fabricated security/compliance/performance claims.
+- **R-37**: read DESIGN.md before UI work.
+- **R-38**: real content or honest placeholder, never fabricated-realistic content.
 
-- **R-02 Copywriting**: FORBIDDEN em dash (—) in any text. Use comma, period, colon, or parentheses.
-- **R-03 Responsiveness**: layout must work at every screen size targeted; no clipped/overlapping elements.
-- **R-17 Data & Numbers**: FORBIDDEN stats without a real source. No numbers > no fake numbers.
-- **R-18 Testimonials**: FORBIDDEN fake testimonials/avatars/names.
-- **R-23 Clarification & Assets**: ask before generating logos/avatars/stats without instruction; otherwise use honest placeholders.
-- **R-24 Navigation**: FORBIDDEN nav/menu items pointing nowhere.
-- **R-25 Color Contrast**: WCAG AA minimum (4.5:1 normal text, 3:1 large text).
-- **R-26 Interactive Elements**: every button/control has real behavior or doesn't exist.
-- **R-27 UI States**: every data view needs empty, loading, and error states.
-- **R-28 FAQ/Help Content**: no generic template questions unrelated to the actual product.
-- **R-32 Keyboard/Input Accessibility**: reachable and operable without a mouse/touch-only assumption; visible focus indicator.
-- **R-33 No File/CSS Patching via Scripts**: build features in source, not via patch scripts.
-- **R-34 Every Theme Must Work**: if you ship light/dark, both must be fully functional.
-- **R-35 Verify Before Delivering**: build and exercise the app before calling it done.
-- **R-36 No Fabricated Claims**: no invented security/compliance/performance claims.
-- **R-37 Design Direction Required**: read DESIGN.md before UI work; if none exists, ask or label output "draft without direction" with dials ENERGY 1 / RHYTHM 1 / MOTION 1.
-- **R-38 Real Content or Honest Placeholder**: no fabricated realistic-looking content.
+### Group 2: Purpose-Gate
+Color/gradients, icons, typography, background, button decoration, badges, shadow, glow, cards, animation, illustration — allowed only with a written one-line purpose.
 
-### Group 2: Purpose-Gate (technique allowed, purpose required)
-
-R-01 Color/Gradients, R-04 Icons, R-06 Typography, R-07 Background, R-08 Button decoration, R-09 Badges, R-10 Glassmorphism (dose cap), R-12 Shadow, R-13 Glow (dose cap), R-14 Cards, R-19 Animations, R-22 Illustrations — each is allowed only with a written one-line purpose; forbidden as an unexamined default.
-
-### Group 3: Quality Locks (consistency)
-
-- **R-05 Layout**: no generic templated structure; order follows actual content/flow.
-- **R-11 Border Radius**: consistent scale, not everything pill-shaped.
-- **R-15 CTA**: no generic "Get Started/Learn More"; label the specific action.
-- **R-16 Copywriting**: no AI buzzwords (seamless, revolutionary, cutting-edge, powerful, effortless).
-- **R-20 Visual Identity**: swap the name/logo test must fail (i.e. design still feels distinct).
-- **R-21 Theme default**: dark/light chosen for a real reason, not "looks tech".
-- **R-29 Palette**: max 2-3 core colors + 1 accent (neutrals don't count).
-- **R-30 No Cloning**: don't mimic Linear/Vercel/Stripe/Notion without being asked.
-- **R-31 Write the reason down**: every major decision gets a one-line rationale, or it's invalid.
-
----
+### Group 3: Quality Locks
+- **R-05**: no generic templated structure.
+- **R-11**: consistent border-radius scale.
+- **R-15**: CTA labels the specific action, not "Get Started".
+- **R-16**: no AI buzzwords (seamless, revolutionary, powerful, effortless).
+- **R-20**: swap-the-logo test must fail (design still feels distinct).
+- **R-29**: max 2-3 core colors + 1 accent (neutrals excluded).
+- **R-30**: don't clone Linear/Vercel/Stripe/Notion without being asked.
+- **R-31**: every major decision gets a one-line rationale.
 
 ## Part 3: Liveliness Toolkit
 
-### Three Dials (required, set explicitly per project in DESIGN.md)
-
-| Dial | 1 (Calm) | 2 (Balanced) | 3 (Bold) |
-|---|---|---|---|
-| ENERGY | Linear, GOV.UK | Stripe, Vercel | Awwwards, agency portfolio |
-| RHYTHM | Uniform, predictable | Consistent with a few breaks | Asymmetric, mixed |
-| MOTION | Hover/state only | Scroll-reveal, transitions | Parallax, choreography |
-
-### Levers
-- One focal point per screen.
-- Hierarchical contrast (size/weight/color differentiated on purpose).
-- Whitespace as structure, not leftover space.
-- One deliberate accent (not zero, not everywhere).
-- Identity motif: one specific, repeated pattern/gesture that makes the product "belong" to itself.
-
-### Design Read (declare before generating)
-> Reading this as: `<screen kind>` for `<audience>`, in a `<visual language>` style, dial `<ENERGY/RHYTHM/MOTION>`.
-
----
+Dials (set explicitly in DESIGN.md): ENERGY / RHYTHM / MOTION, each 1 (calm) to 3 (bold).
+Levers: one focal point per screen, hierarchical contrast, whitespace as structure, one deliberate accent, one repeated identity motif.
 
 ## Delivery Gate (Mandatory)
 
-Run before delivering. All Hard Gate answers must be **no**; all Liveliness answers must be **yes**; all Quality Lock answers must be **no**. If any check fails, fix it before shipping — do not ship a design/PR with a known FAIL.
+Run before delivering. All Hard Gate checks: no known failures. All Liveliness checks: yes. All Quality Locks: no known failures. Fix before shipping, don't ship with a known FAIL.
