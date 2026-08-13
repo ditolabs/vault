@@ -1,211 +1,134 @@
 package com.ditolabs.pwvault.ui.screens
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.ditolabs.pwvault.data.Categories
-import com.ditolabs.pwvault.data.Entry
-import com.ditolabs.pwvault.i18n.LocalStrings
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.ditolabs.pwvault.data.Category
+import com.ditolabs.pwvault.data.VaultEntry
+import com.ditolabs.pwvault.i18n.StringSet
+import com.ditolabs.pwvault.ui.components.BrutalCard
+import com.ditolabs.pwvault.ui.components.Tag
+import com.ditolabs.pwvault.ui.theme.LocalPwVaultColors
+import com.ditolabs.pwvault.ui.theme.PwVaultTypography
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun VaultListScreen(
-    entries: List<Entry>,
-    onOpenEntry: (Entry) -> Unit,
-    onAddEntry: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onCopyPassword: (Entry) -> Unit,
-    onCleanEmptyPasswords: () -> Unit,
-) {
-    val s = LocalStrings.current
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
-    var activeCategory by remember { mutableStateOf("semua") }
-    var query by remember { mutableStateOf("") }
-    var copiedToast by remember { mutableStateOf<String?>(null) }
-
-    val filtered = entries.filter { e ->
-        (activeCategory == "semua" || e.category == activeCategory) &&
-            (query.isBlank() || e.title.contains(query, true) || e.username.contains(query, true))
-    }
-
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet {
-                Text(s["categories"], style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
-                Categories.all.forEach { (id, labels) ->
-                    val count = if (id == "semua") entries.size else entries.count { it.category == id }
-                    NavigationDrawerItem(
-                        label = { Text("${labels.first}  ($count)") },
-                        selected = activeCategory == id,
-                        onClick = { activeCategory = id; scope.launch { drawerState.close() } },
-                        modifier = Modifier.padding(horizontal = 12.dp),
-                    )
-                }
-                if (entries.any { it.password.isBlank() }) {
-                    HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                    NavigationDrawerItem(
-                        label = { Text(s["clean_empty"]) },
-                        selected = false,
-                        icon = { Icon(Icons.Filled.Warning, null, tint = MaterialTheme.colorScheme.error) },
-                        onClick = { onCleanEmptyPasswords(); scope.launch { drawerState.close() } },
-                        modifier = Modifier.padding(horizontal = 12.dp),
-                    )
-                }
-            }
-        },
-    ) {
-        Scaffold(
-            topBar = {
-                Column {
-                    TopAppBar(
-                        title = { Text(Categories.all.firstOrNull { it.first == activeCategory }?.second?.first ?: s["all"]) },
-                        navigationIcon = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Filled.Menu, null) }
-                        },
-                        actions = {
-                            IconButton(onClick = onOpenSettings) { Icon(Icons.Filled.Settings, null) }
-                        }
-                    )
-                    OutlinedTextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        placeholder = { Text(s["search_hint"]) },
-                        leadingIcon = { Icon(Icons.Filled.Search, null) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                    )
-                    Text(
-                        s["tap_edit_hold_copy"],
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    )
-                }
-            },
-            floatingActionButton = {
-                FloatingActionButton(onClick = onAddEntry) { Icon(Icons.Filled.Add, null) }
-            },
-        ) { padding ->
-            Box(Modifier.padding(padding).fillMaxSize()) {
-                if (filtered.isEmpty()) {
-                    Text(
-                        s["empty_vault"],
-                        modifier = Modifier.align(Alignment.Center).padding(32.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    )
-                } else {
-                    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-                        items(filtered, key = { it.id }) { entry ->
-                            EntryRow(
-                                entry = entry,
-                                onTap = { onOpenEntry(entry) },
-                                onLongPressComplete = {
-                                    onCopyPassword(entry)
-                                    copiedToast = entry.title
-                                },
-                            )
-                        }
-                        item { Spacer(Modifier.height(80.dp)) }
-                    }
-                }
-
-                copiedToast?.let { title ->
-                    LaunchedEffect(title) { delay(1600); copiedToast = null }
-                    Surface(
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 90.dp),
-                        shape = RoundedCornerShape(4.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                    ) {
-                        Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("${s["password_label"]} '$title' ${s["copied"]}", fontSize = 12.sp)
-                        }
-                    }
-                }
-            }
-        }
-    }
+private fun categoryLabel(c: Category) = when (c) {
+    Category.DEV -> "DEV"
+    Category.FINANCE -> "FINANCE"
+    Category.SOCIAL -> "SOCIAL"
+    Category.EMAIL -> "EMAIL"
+    Category.OTHER -> "LAINNYA"
 }
 
 @Composable
-private fun EntryRow(entry: Entry, onTap: () -> Unit, onLongPressComplete: () -> Unit) {
-    var holding by remember { mutableStateOf(false) }
+fun VaultListScreen(
+    strings: StringSet,
+    entries: List<VaultEntry>,
+    onOpenEntry: (VaultEntry) -> Unit,
+    onNewEntry: () -> Unit,
+    onCopyUsername: (VaultEntry) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalPwVaultColors.current
 
-    LaunchedEffect(holding) {
-        if (holding) {
-            delay(3000)
-            if (holding) { onLongPressComplete(); holding = false }
-        }
-    }
-
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(vertical = 5.dp)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .pointerInput(entry.id) {
-                detectTapGestures(
-                    onTap = { onTap() },
-                    onPress = {
-                        holding = true
-                        tryAwaitRelease()
-                        holding = false
-                    },
-                )
-            }
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            Modifier
-                .size(38.dp)
-                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp)),
-            contentAlignment = Alignment.Center,
+    Column(modifier = modifier.fillMaxSize()) {
+        // Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (entry.password.isBlank()) {
-                Icon(Icons.Filled.Warning, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
-            } else {
+            Text(strings.appName, style = PwVaultTypography.titleLarge, color = colors.text)
+            BrutalCard(background = colors.accent, cornerRadius = 4.dp, borderWidth = 2.dp, onClick = onNewEntry) {
                 Text(
-                    entry.title.split(" ").mapNotNull { it.firstOrNull() }.take(2).joinToString("").uppercase(),
-                    fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.primary,
+                    strings.vaultListNewEntry,
+                    style = PwVaultTypography.labelLarge,
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                 )
             }
         }
-        Spacer(Modifier.width(12.dp))
-        Column {
-            Text(entry.title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Text(entry.username, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+        if (entries.isEmpty()) {
+            // R-27: explicit empty state, not just a blank screen.
+            Column(
+                modifier = Modifier.fillMaxSize().padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(strings.vaultListEmptyTitle, style = PwVaultTypography.titleMedium, color = colors.text)
+                Column(modifier = Modifier.padding(top = 8.dp)) {
+                    Text(strings.vaultListEmptyBody, style = PwVaultTypography.bodyMedium, color = colors.textDim)
+                }
+            }
+            return@Column
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            items(entries, key = { it.id }) { entry ->
+                BrutalCard(modifier = Modifier.fillMaxWidth(), onClick = { onOpenEntry(entry) }) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(entry.title, style = PwVaultTypography.titleMedium, color = colors.text)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Tag(categoryLabel(entry.category), colors.raised, colors.text, colors.line)
+                                if (entry.hasTotp) {
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Tag("2FA", colors.accent.copy(alpha = 0.18f), colors.accent, colors.accent)
+                                }
+                            }
+                            Column(modifier = Modifier.padding(top = 6.dp)) {
+                                Text(
+                                    entry.username,
+                                    style = PwVaultTypography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                                    color = colors.textDim,
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        BrutalCard(
+                            background = colors.accent,
+                            cornerRadius = 4.dp,
+                            borderWidth = 2.dp,
+                            onClick = { onCopyUsername(entry) },
+                        ) {
+                            Icon(
+                                Icons.Filled.ContentCopy,
+                                contentDescription = strings.copiedToast,
+                                tint = Color.White,
+                                modifier = Modifier.padding(8.dp).size(16.dp),
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

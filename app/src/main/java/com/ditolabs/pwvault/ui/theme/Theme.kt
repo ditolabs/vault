@@ -5,67 +5,54 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import com.ditolabs.pwvault.data.ThemeMode
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 
-// Dark tokens — same as original DESIGN.md
-val Ink900 = Color(0xFF0B0D12)
-val Ink800 = Color(0xFF12141B)
-val Ink700 = Color(0xFF171A24)
-val InkLine = Color(0xFF262B38)
-val Paper = Color(0xFFE9EAE2)
-val Dim = Color(0xFF8B8F9C)
-val VaultGreen = Color(0xFF3EA87C)
-val VaultGreenDim = Color(0xFF2C7A5A)
-val Danger = Color(0xFFC96A5A)
+/** User-facing theme choice (DESIGN.md: system/light/dark, switchable in Settings). */
+enum class ThemePreference { SYSTEM, LIGHT, DARK }
 
-// Light tokens — same identity (paper surface, green accent), inverted for contrast.
-// Not a deferred toggle: chosen because "brief on the go" use fits both contexts.
-val LightBg = Color(0xFFF4F3EE)
-val LightSurface = Color(0xFFFFFFFF)
-val LightLine = Color(0xFFDEDCD3)
-val LightText = Color(0xFF14161C)
-val LightDim = Color(0xFF6B6F7A)
-val GreenOnLight = Color(0xFF2C7A5A) // darker green for AA contrast on light bg
-val DangerOnLight = Color(0xFFA9503F)
-
-private val DarkScheme = darkColorScheme(
-    primary = VaultGreen,
-    onPrimary = Ink900,
-    background = Ink900,
-    onBackground = Paper,
-    surface = Ink800,
-    onSurface = Paper,
-    surfaceVariant = Ink700,
-    onSurfaceVariant = Dim,
-    outline = InkLine,
-    error = Danger,
-    onError = Ink900,
-)
-
-private val LightScheme = lightColorScheme(
-    primary = GreenOnLight,
-    onPrimary = Color.White,
-    background = LightBg,
-    onBackground = LightText,
-    surface = LightSurface,
-    onSurface = LightText,
-    surfaceVariant = Color(0xFFEDEBE3),
-    onSurfaceVariant = LightDim,
-    outline = LightLine,
-    error = DangerOnLight,
-    onError = Color.White,
-)
+val LocalPwVaultColors = compositionLocalOf { DarkPwVaultColors }
 
 @Composable
-fun PwVaultTheme(themeMode: ThemeMode, content: @Composable () -> Unit) {
-    val useDark = when (themeMode) {
-        ThemeMode.DARK -> true
-        ThemeMode.LIGHT -> false
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+fun PwVaultTheme(
+    preference: ThemePreference = ThemePreference.SYSTEM,
+    content: @Composable () -> Unit,
+) {
+    val useDark = when (preference) {
+        ThemePreference.SYSTEM -> isSystemInDarkTheme()
+        ThemePreference.LIGHT -> false
+        ThemePreference.DARK -> true
     }
-    MaterialTheme(
-        colorScheme = if (useDark) DarkScheme else LightScheme,
-        content = content
-    )
+    val pwColors = if (useDark) DarkPwVaultColors else LightPwVaultColors
+
+    // Material3's own color scheme is kept minimal — most surfaces pull from
+    // LocalPwVaultColors directly so the brutal hard-border/shadow look does
+    // not get diluted by default Material elevation/tonal-overlay behavior.
+    val materialScheme = if (useDark) {
+        darkColorScheme(
+            primary = pwColors.accent,
+            background = pwColors.background,
+            surface = pwColors.surface,
+            onBackground = pwColors.text,
+            onSurface = pwColors.text,
+            error = pwColors.danger,
+        )
+    } else {
+        lightColorScheme(
+            primary = pwColors.accent,
+            background = pwColors.background,
+            surface = pwColors.surface,
+            onBackground = pwColors.text,
+            onSurface = pwColors.text,
+            error = pwColors.danger,
+        )
+    }
+
+    CompositionLocalProvider(LocalPwVaultColors provides pwColors) {
+        MaterialTheme(
+            colorScheme = materialScheme,
+            typography = PwVaultTypography,
+            content = content,
+        )
+    }
 }
