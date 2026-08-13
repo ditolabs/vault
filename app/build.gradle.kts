@@ -40,5 +40,11 @@ dependencies {
     // Icon rule (non-negotiable, see DESIGN.md / CLAUDE.md): core only, never -extended.
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.material3:material3")
+    // XML theme parent (Theme.Material3.DayNight.NoActionBar) used by
+    // res/values/themes.xml for the cold-start launch theme — this comes
+    // from the View-system Material Components lib, not from Compose
+    // material3. Missing this caused the AAPT "resource ... not found" build
+    // failure (Compose material3 alone doesn't ship XML styles).
+    implementation("com.google.android.material:material:1.12.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
