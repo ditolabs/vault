@@ -13,11 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -36,6 +31,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.ditolabs.pwvault.i18n.StringSet
 import com.ditolabs.pwvault.ui.components.BrutalCard
+import com.ditolabs.pwvault.ui.components.PwVaultIcons
 import com.ditolabs.pwvault.ui.theme.LocalPwVaultColors
 import com.ditolabs.pwvault.ui.theme.PwVaultTypography
 import com.ditolabs.pwvault.ui.theme.SecretTextStyle
@@ -78,7 +74,7 @@ fun LockScreen(
         BrutalCard(background = colors.surface, modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Lock, contentDescription = null, tint = colors.text, modifier = Modifier.size(20.dp))
+                    Icon(PwVaultIcons.Lock, contentDescription = null, tint = colors.text, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(strings.lockTitle, style = PwVaultTypography.titleLarge, color = colors.text)
                 }
@@ -109,7 +105,7 @@ fun LockScreen(
                             modifier = Modifier.weight(1f),
                         )
                         Icon(
-                            imageVector = if (revealed) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                            imageVector = if (revealed) PwVaultIcons.VisibilityOff else PwVaultIcons.Visibility,
                             contentDescription = if (revealed) "Sembunyikan master key" else "Tampilkan master key",
                             tint = colors.textDim,
                             modifier = Modifier
@@ -126,7 +122,7 @@ fun LockScreen(
 
                 BrutalCard(background = colors.danger, cornerRadius = 4.dp, borderWidth = 2.dp, modifier = Modifier.fillMaxWidth()) {
                     Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Warning, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        Icon(PwVaultIcons.Warning, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(strings.lockWarning, style = PwVaultTypography.bodyMedium, color = Color.White)
                     }

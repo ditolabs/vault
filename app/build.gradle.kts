@@ -37,8 +37,11 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    // Icon rule (non-negotiable, see DESIGN.md / CLAUDE.md): core only, never -extended.
-    implementation("androidx.compose.material:material-icons-core")
+    // Icon rule (non-negotiable, see DESIGN.md / CLAUDE.md): no
+    // material-icons-extended. As of this pass we dropped material-icons-
+    // core too — every glyph the app actually needs (copy, eye, eye-off,
+    // back arrow, lock, warning) is hand-drawn in PwVaultIcons.kt, so
+    // there's no icon-font dependency left to accidentally bloat.
     implementation("androidx.compose.material3:material3")
     // XML theme parent (Theme.Material3.DayNight.NoActionBar) used by
     // res/values/themes.xml for the cold-start launch theme — this comes

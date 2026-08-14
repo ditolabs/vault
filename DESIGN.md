@@ -48,9 +48,14 @@ feedback (the shadow compresses on press instead of a color/opacity fade).
   unchanged from the original scale; the brutalist reference's tighter 6px
   radius was not adopted, to keep R-11 (one consistent scale) rather than
   running two.
-- Icon set: `material-icons-core` only, hand-picked. Not `-extended` — that
-  package ships ~10,600 icon classes unminified, which is what bloated an
-  earlier build (from Gemini) to 54MB for a 15-icon app.
+- Icon set: fully hand-drawn (`PwVaultIcons.kt`, Compose `ImageVector`), not
+  `material-icons-core` or `-extended`. Originally scoped as "core only,
+  never -extended" — but three needed glyphs (copy, eye, eye-off) turned out
+  to live in `-extended`, not `-core`. Rather than add that dependency back,
+  every glyph the app uses got hand-drawn instead, so there's no icon-font
+  dependency left at all. `-extended` was rejected earlier for bloating an
+  build to 54MB for a 15-icon app; this removes that risk entirely rather
+  than just capping it.
 
 ## Palette
 

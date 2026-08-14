@@ -8,16 +8,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -37,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.ditolabs.pwvault.data.VaultEntry
 import com.ditolabs.pwvault.i18n.StringSet
 import com.ditolabs.pwvault.ui.components.BrutalCard
+import com.ditolabs.pwvault.ui.components.PwVaultIcons
 import com.ditolabs.pwvault.ui.theme.LocalPwVaultColors
 import com.ditolabs.pwvault.ui.theme.PwVaultTypography
 import com.ditolabs.pwvault.ui.theme.SecretTextStyle
@@ -63,7 +60,7 @@ fun EntryDetailScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                Icons.Filled.ArrowBack,
+                PwVaultIcons.ArrowBack,
                 contentDescription = null,
                 tint = colors.text,
                 modifier = Modifier.size(22.dp).padding(end = 4.dp),
@@ -185,7 +182,7 @@ private fun SecretRow(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (onToggleReveal != null) {
                         Icon(
-                            imageVector = if (masked) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                            imageVector = if (masked) PwVaultIcons.Visibility else PwVaultIcons.VisibilityOff,
                             contentDescription = if (masked) "Tampilkan password" else "Sembunyikan password",
                             tint = colors.textDim,
                             modifier = Modifier
@@ -200,7 +197,7 @@ private fun SecretRow(
                     }
                     BrutalCard(background = colors.accent, cornerRadius = 4.dp, borderWidth = 2.dp, onClick = onCopy) {
                         Icon(
-                            Icons.Filled.ContentCopy,
+                            PwVaultIcons.ContentCopy,
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.padding(6.dp).size(14.dp),
@@ -253,7 +250,7 @@ private fun TotpCard(strings: StringSet, onCopy: (String) -> Unit) {
                     }
                     BrutalCard(cornerRadius = 4.dp, borderWidth = 2.dp, onClick = { onCopy(code) }) {
                         Icon(
-                            Icons.Filled.ContentCopy,
+                            PwVaultIcons.ContentCopy,
                             contentDescription = null,
                             tint = colors.text,
                             modifier = Modifier.padding(8.dp).size(16.dp),

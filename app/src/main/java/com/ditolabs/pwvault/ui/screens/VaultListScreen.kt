@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +23,7 @@ import com.ditolabs.pwvault.data.Category
 import com.ditolabs.pwvault.data.VaultEntry
 import com.ditolabs.pwvault.i18n.StringSet
 import com.ditolabs.pwvault.ui.components.BrutalCard
+import com.ditolabs.pwvault.ui.components.PwVaultIcons
 import com.ditolabs.pwvault.ui.components.Tag
 import com.ditolabs.pwvault.ui.theme.LocalPwVaultColors
 import com.ditolabs.pwvault.ui.theme.PwVaultTypography
@@ -120,7 +119,7 @@ fun VaultListScreen(
                             onClick = { onCopyUsername(entry) },
                         ) {
                             Icon(
-                                Icons.Filled.ContentCopy,
+                                PwVaultIcons.ContentCopy,
                                 contentDescription = strings.copiedToast,
                                 tint = Color.White,
                                 modifier = Modifier.padding(8.dp).size(16.dp),
