@@ -30,6 +30,8 @@ import com.ditolabs.pwvault.ui.components.IconMoon
 import com.ditolabs.pwvault.ui.components.IconShield
 import com.ditolabs.pwvault.ui.components.IconSun
 import com.ditolabs.pwvault.ui.components.BrutalCard
+import com.ditolabs.pwvault.ui.components.FieldChip
+import com.ditolabs.pwvault.ui.components.IconVisibility
 import com.ditolabs.pwvault.ui.components.VaultLogo
 
 enum class LockTab { PIN, PASSWORD, BIOMETRIC }
@@ -139,16 +141,25 @@ fun LockScreen(
 private fun PasswordTab(isCreating: Boolean, error: String?, onSubmit: (String) -> Unit) {
     val s = LocalStrings.current
     var pw by remember { mutableStateOf("") }
+    var revealed by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = pw,
-            onValueChange = { pw = it },
-            label = { Text(if (isCreating) s["new_master_password_hint"] else s["master_password_hint"]) },
-            visualTransformation = PasswordVisualTransformation(),
-            textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        FieldChip(label = if (isCreating) s["new_master_password_hint"] else s["master_password_hint"], modifier = Modifier.fillMaxWidth()) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.foundation.text.BasicTextField(
+                    value = pw,
+                    onValueChange = { pw = it },
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurface),
+                    visualTransformation = if (revealed) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.onSurface),
+                    modifier = Modifier.weight(1f),
+                )
+                androidx.compose.foundation.layout.Spacer(Modifier.width(8.dp))
+                androidx.compose.material3.IconButton(onClick = { revealed = !revealed }, modifier = Modifier.size(22.dp)) {
+                    IconVisibility(crossedOut = !revealed, modifier = Modifier.size(20.dp))
+                }
+            }
+        }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp)) }
         Spacer(Modifier.height(14.dp))
         BrutalCard(

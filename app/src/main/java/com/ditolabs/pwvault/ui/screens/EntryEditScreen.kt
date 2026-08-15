@@ -26,6 +26,7 @@ import com.ditolabs.pwvault.ui.components.IconContentCopy
 import com.ditolabs.pwvault.ui.components.IconRefresh
 import com.ditolabs.pwvault.ui.components.IconVisibility
 import com.ditolabs.pwvault.ui.components.BrutalCard
+import com.ditolabs.pwvault.ui.components.TotpPie
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -183,7 +184,7 @@ private fun TotpCodeCard(secret: String, clipboard: ClipboardManager) {
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-            Text("${secondsLeft}s", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TotpPie(secondsLeft = secondsLeft)
             Spacer(Modifier.width(8.dp))
             IconButton(onClick = { clipboard.setText(AnnotatedString(code)) }) {
                 IconContentCopy(modifier = Modifier.size(18.dp))

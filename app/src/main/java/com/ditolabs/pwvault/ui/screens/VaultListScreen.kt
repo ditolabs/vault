@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -27,6 +28,8 @@ import com.ditolabs.pwvault.data.Categories
 import com.ditolabs.pwvault.data.Entry
 import com.ditolabs.pwvault.i18n.LocalStrings
 import com.ditolabs.pwvault.ui.components.BrutalCard
+import com.ditolabs.pwvault.ui.components.EmptyState
+import com.ditolabs.pwvault.ui.theme.CategoryColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -113,11 +116,13 @@ fun VaultListScreen(
         ) { padding ->
             Box(Modifier.padding(padding).fillMaxSize()) {
                 if (filtered.isEmpty()) {
-                    Text(
-                        s["empty_vault"],
-                        modifier = Modifier.align(Alignment.Center).padding(32.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    EmptyState(
+                        icon = { Icon(Icons.Filled.Lock, null, tint = MaterialTheme.colorScheme.onSecondary) },
+                        title = s["empty_vault"],
+                        body = s["empty_vault_body"],
+                        ctaLabel = if (activeCategory == "semua") "+ ${s["add_entry"]}" else null,
+                        onCta = if (activeCategory == "semua") onAddEntry else null,
+                        modifier = Modifier.align(Alignment.Center),
                     )
                 } else {
                     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
@@ -213,10 +218,21 @@ private fun EntryRow(entry: Entry, onTap: () -> Unit, onLongPressComplete: () ->
                 }
             }
             Spacer(Modifier.width(12.dp))
-            Column {
+            Column(Modifier.weight(1f)) {
                 Text(entry.title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 Text(entry.username, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            val catColor = CategoryColors[entry.category] ?: MaterialTheme.colorScheme.surfaceVariant
+            Text(
+                entry.category.uppercase(),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Black,
+                color = androidx.compose.ui.graphics.Color.Black,
+                modifier = Modifier
+                    .border(2.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
+                    .background(catColor, RoundedCornerShape(4.dp))
+                    .padding(horizontal = 6.dp, vertical = 3.dp),
+            )
         }
     }
 }

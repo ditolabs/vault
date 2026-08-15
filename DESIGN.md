@@ -128,3 +128,55 @@ a clean, low-risk list pattern).
 Dial: unchanged at ENERGY 2 / RHYTHM 1 / MOTION 1 for now — the press-
 compress shadow is a small motion increase, but not enough on its own to
 warrant bumping the dial; revisit if more motion gets added elsewhere.
+
+## Palette override (this pass — supersedes the section above)
+
+The muted single-accent palette above is superseded by the neon-brutalist
+palette from the Gemini mockup, adopted directly at the person's explicit
+instruction ("abaikan dulu DESIGN.md, nanti tinggal update"). This section
+is that update.
+
+```
+Lime      #B4FF39  primary / CTA buttons (onPrimary: black)
+Lavender  #E5D4FF  secondary / tags (sosmed category)
+Cyan bg   #E5F9FF  surfaceVariant (light) / kerja category
+Yellow    #FFD166  tertiary / ecommerce category
+Red       #FF4D4D  error / danger
+Pink      #EF476F  destructive actions (delete)
+Blue      #118AB2  entry-detail header panel
+Green     #06D6A0  success / "copied" state
+Cream bg  #FFF9E6  background (light)
+```
+
+R-29 (max 2-3 core colors + 1 accent) is knowingly not satisfied here — this
+was a deliberate, explicit override, not an oversight. Category tags use
+flat colors that don't adapt to dark/light theme (informational
+color-coding, not brand accent). Dark-mode equivalent: background near-black
+(`#0B0B0F`), surface `#19191F`, outline flips to off-white so the
+border+shadow motif still reads against a dark surface; lime/lavender/
+yellow/red stay the same hex in both themes (they're bright enough to read
+on both backgrounds).
+
+The "SECURE. RAW. UNHACKABLE." tagline from the source mockup was dropped —
+"unhackable" is a claim nobody can make and directly contradicts the Tone
+section above; this app keeps the plain "Offline. Lokal. Tanpa akun." line
+instead.
+
+The mockup's layout (desktop sidebar + split list/detail pane, mouse hover
+states) was adapted to mobile conventions: sidebar → slide-in drawer behind
+a hamburger button; split-pane → standard push navigation (list → tap →
+full-screen detail, with a back button). Hover states don't apply to touch;
+the existing press-compress shadow motion covers that feedback role.
+
+Three elements were pulled in beyond a straight reskin ("worth taking" from
+the mockup review):
+- TOTP countdown as a ring/pie chart (`ui/components/TotpPie.kt`), replacing
+  the plain "Xs" text badge — turns error-red under 5 seconds remaining.
+- Dashed-border empty state (`ui/components/EmptyState.kt`, `Modifier.dashedBorder`)
+  for the vault-list empty case — Compose has no built-in dashed border, so
+  this draws it directly via `drawRoundRect` + `PathEffect.dashPathEffect`.
+- Floating label chip (`ui/components/FieldChip.kt`) — a small dark label
+  tag sitting on the top border of a field, replacing the master-key
+  field's default `OutlinedTextField` label. Not applied to every field
+  app-wide in this pass (`OutlinedTextField`s elsewhere were left as-is to
+  limit risk) — a fuller pass could extend this consistently.
