@@ -2,52 +2,61 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
     namespace = "com.ditolabs.pwvault"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.ditolabs.pwvault"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        targetSdk = 34
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
-    buildFeatures {
-        compose = true
+    buildTypes {
+        debug {
+            // Debug still unminified on purpose (faster iteration); release below is not.
+            isMinifyEnabled = false
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+    kotlinOptions { jvmTarget = "17" }
+    buildFeatures { compose = true }
 }
 
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.activity:activity-compose:1.9.3")
-    implementation(platform("androidx.compose:compose-bom:2024.12.01"))
+    implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.fragment:fragment-ktx:1.8.3")
+    implementation(platform("androidx.compose:compose-bom:2024.09.02"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    // Icon rule (non-negotiable, see DESIGN.md / CLAUDE.md): no
-    // material-icons-extended. As of this pass we dropped material-icons-
-    // core too — every glyph the app actually needs (copy, eye, eye-off,
-    // back arrow, lock, warning) is hand-drawn in PwVaultIcons.kt, so
-    // there's no icon-font dependency left to accidentally bloat.
     implementation("androidx.compose.material3:material3")
-    // XML theme parent (Theme.Material3.DayNight.NoActionBar) used by
-    // res/values/themes.xml for the cold-start launch theme — this comes
-    // from the View-system Material Components lib, not from Compose
-    // material3. Missing this caused the AAPT "resource ... not found" build
-    // failure (Compose material3 alone doesn't ship XML styles).
-    implementation("com.google.android.material:material:1.12.0")
+    // Deliberately material-icons-CORE, not -extended (extended = ~10k icon classes
+    // unminified, which is exactly what bloated the Gemini build to 54MB). Anything
+    // not in core gets a hand-picked vector drawable instead.
+    implementation("androidx.compose.material:material-icons-core")
+    implementation("com.google.android.material:material:1.12.0") // XML theme parent for the Activity window only; UI itself is all Compose
+    implementation("androidx.navigation:navigation-compose:2.8.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
+    implementation("androidx.biometric:biometric:1.1.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
