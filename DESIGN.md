@@ -180,3 +180,53 @@ the mockup review):
   field's default `OutlinedTextField` label. Not applied to every field
   app-wide in this pass (`OutlinedTextField`s elsewhere were left as-is to
   limit risk) — a fuller pass could extend this consistently.
+
+## Full chrome replacement (this pass — supersedes ANTISLOP where they conflict)
+
+The palette-override pass above only reskinned high-visibility surfaces
+(buttons, cards) while leaving default M3 chrome untouched underneath —
+`Scaffold`/`TopAppBar`, `ModalNavigationDrawer`/`NavigationDrawerItem`,
+`OutlinedTextField`, `FilterChip`, `Switch`, `AlertDialog`. The result read
+as half-brutalist, half-stock-Material. This pass replaces all of it with
+hand-built equivalents, at the person's explicit instruction to prioritize
+matching the mockup over DESIGN.md/ANTISLOP.md consistency rules where they'd
+otherwise hold this back:
+
+- `ui/components/BrutalTopBar.kt` — solid header + thick bottom border,
+  replaces `TopAppBar` everywhere (List, EntryEdit, Settings).
+- Category drawer in `VaultListScreen` — kept `ModalNavigationDrawer` for
+  its swipe/scrim mechanism (reimplementing that gesture handling wasn't
+  worth the risk), but replaced `ModalDrawerSheet`/`NavigationDrawerItem`
+  content with a custom yellow-background bordered column, active category
+  inverted (matches the mockup's drawer).
+- `ui/components/BrutalTextField.kt` — `FieldChip`'s floating-label pattern
+  generalized into a reusable field, replacing every `OutlinedTextField` in
+  the app (title/username/password/notes/TOTP-secret/search).
+- `ui/components/BrutalChip.kt` — replaces `FilterChip` (language, theme,
+  auto-lock, category selection in EntryEdit).
+- `ui/components/BrutalSwitch.kt` — hand-built square toggle; M3 `Switch`'s
+  pill track/thumb can't be reshaped into the flat-bordered language via its
+  own parameters, so this is built from scratch (Box track + animated-offset
+  thumb) rather than restyled.
+- `ui/components/BrutalDialog.kt` — wraps the low-level `Dialog` composable
+  (keeps scrim + dismiss-on-outside-tap) with a `BrutalCard` shell, replacing
+  `AlertDialog`'s rounded/tonal look in the password generator.
+- Category picker in `EntryEditScreen` changed from an `ExposedDropdownMenuBox`
+  dropdown to a horizontal-scroll row of `BrutalChip`s — a dropdown menu
+  doesn't have a natural brutalist equivalent, and chip-selection fits the
+  visual language better regardless.
+- `Checkbox` (password generator's uppercase/digits/symbols toggles) reuses
+  `BrutalSwitch` rather than a separate checkbox component.
+
+Not touched in this pass: the password-length `Slider` in the generator
+dialog is still default M3 — a fully custom brutal slider (drag-gesture
+handling, custom thumb/track) was scoped out for time; it's the one
+remaining default-Material control in the app.
+
+All of the above is a visual-layer change only — no crypto, session,
+gesture (tap vs. long-press-to-copy), or state-management logic was
+touched. R-29 (max 2-3 colors), the "read DESIGN.md before UI work" router
+rule, and the icon-only-hand-drawn rule are all still followed; what's
+overridden here is specifically DESIGN.md's earlier single-muted-accent
+palette and its assumption that default M3 chrome was an acceptable base to
+build on.
